@@ -43,39 +43,9 @@ func TestIntToGo(t *testing.T) {
 // 	assert.Equal(t, o, c.(float64))
 // }
 
-// Finish this off, but the types on incoming (py -> go) may be different types
-
-// func TestDoubleToGo(t *testing.T) {
-// 	o := 123
-// 	c, e := togo(python.PyInt_FromLong(o))
-
-// 	assert.Nil(t, e)
-// 	assert.Equal(t, o, c.(int))
-// }
-
-// func TestSliceToGo(t *testing.T) {
-// 	o := 123
-// 	c, e := togo(python.PyInt_FromLong(o))
-
-// 	assert.Nil(t, e)
-// 	assert.Equal(t, o, c.(int))
-// }
-
-// func TestDictToGo(t *testing.T) {
-// 	o := 123
-// 	c, e := togo(python.PyInt_FromLong(o))
-
-// 	assert.Nil(t, e)
-// 	assert.Equal(t, o, c.(int))
-// }
-
-// func TestNoneToGo(t *testing.T) {
-// 	o := 123
-// 	c, e := togo(python.PyInt_FromLong(o))
-
-// 	assert.Nil(t, e)
-// 	assert.Equal(t, o, c.(int))
-// }
+// None
+// Arrays
+// Dictionaries
 
 //
 // Go -> Python
@@ -114,3 +84,7 @@ func TestLongToPy(t *testing.T) {
 	assert.Nil(t, e)
 	assert.True(t, python.PyLong_Check(c))
 }
+
+// None
+// Arrays
+// Dictionaries

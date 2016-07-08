@@ -68,12 +68,17 @@ func topy(v interface{}) (ret *python.PyObject, err error) {
 }
 
 // Conversion to go types (python -> go)
+// honestly I'd rather use cumin for this, but that seems a lot more involved
 func togo(o *python.PyObject) (interface{}, error) {
+
 	if python.PyString_Check(o) {
 		return python.PyString_AsString(o), nil
 
 	} else if python.PyInt_Check(o) {
 		return python.PyInt_AsLong(o), nil
+
+	} else if python.PyLong_Check(o) {
+		return python.PyLong_AsDouble(o), nil
 
 	} else {
 		return nil, fmt.Errorf("Unknown type converting to go!")
