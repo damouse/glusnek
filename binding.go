@@ -29,7 +29,7 @@ static PyMethodDef ModuleMethods[] = {
 };
 
 // Set up the python environment and inject gosnake as a virtual-python module
-static void initialize_python () {
+static void initialize_python (int log) {
     if (Py_IsInitialized() == 0) {
         Py_Initialize();
     }
@@ -40,7 +40,10 @@ static void initialize_python () {
 
     Py_InitModule("gosnake", ModuleMethods);
     PyEval_ReleaseThread(PyGILState_GetThisThreadState());
-    fprintf(stdout, "gosnake: initialized python env\n");
+
+    if (log != 0) {
+        fprintf(stdout, "gosnake: initialized python env\n");
+    }
 }
 
 // Threading implementation
@@ -70,7 +73,7 @@ import (
 
 // Package initialization
 func init() {
-	C.initialize_python()
+	C.initialize_python(C.int(0))
 	C.register_sig_handler()
 	create_callback = make(chan ThreadCallback, 1)
 }
