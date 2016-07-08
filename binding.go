@@ -117,18 +117,11 @@ func (b *Binding) Import(name string) error {
 
 	defer thread.Kill()
 	return <-done
-
-	// if m := python.PyImport_ImportModuleNoBlock(name); m == nil {
-	// 	return b.parseException()
-	// } else {
-	// 	b.modules[name] = m
-	// 	return nil
-	// }
 }
 
 // Call a python function on passed module. Fails if Binding.Import(moduleName) has not already succeeded
 // If the call raises an exception in python its passed along as a go error
-func (b *Binding) Call(moduleName string, args []interface{}, kwargs map[string]interface{}) ([]interface{}, error) {
+func (b *Binding) Call(module string, function string, args []interface{}, kwargs map[string]interface{}) ([]interface{}, error) {
 	return nil, nil
 }
 
