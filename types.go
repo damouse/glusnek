@@ -2,6 +2,26 @@ package gosnake
 
 // Conversion between C.Python and python.PyObject types to and from G
 
+/*
+   cgo type mappings. Taken from http://blog.giorgis.io/cgo-examples
+
+   char -->  C.char -->  byte
+   signed char -->  C.schar -->  int8
+   unsigned char -->  C.uchar -->  uint8
+   short int -->  C.short -->  int16
+   short unsigned int -->  C.ushort -->  uint16
+   int -->  C.int -->  int
+   unsigned int -->  C.uint -->  uint32
+   long int -->  C.long -->  int32 or int64
+   long unsigned int -->  C.ulong -->  uint32 or uint64
+   long long int -->  C.longlong -->  int64
+   long long unsigned int -->  C.ulonglong -->  uint64
+   float -->  C.float -->  float32
+   double -->  C.double -->  float64
+   wchar_t -->  C.wchar_t  -->  [[https://github.com/orofarne/gowchar/blob/master/gowchar.go][wchar]]
+   void * -> unsafe.Pointer
+*/
+
 // #cgo pkg-config: python-2.7
 // #include "Python.h"
 import "C"
@@ -79,17 +99,19 @@ func pyfmt(v interface{}) (unsafe.Pointer, string) {
 		return unsafe.Pointer(cstr), "s"
 
 	case *python.PyObject:
-		return unsafe.Pointer(topy(v)), "O"
+		return unsafe.Pointer((*C.PyObject)(unsafe.Pointer(v))), "O"
 
 	}
 
 	panic(fmt.Errorf("python: unknown type (%v)", v))
 }
 
+// Conversion to python types (go -> python)
 func topy(self *python.PyObject) *C.PyObject {
 	return (*C.PyObject)(unsafe.Pointer(self))
 }
 
+// Conversion to go types (python -> go)
 func togo(obj *C.PyObject) *python.PyObject {
 	if obj == nil {
 		return nil

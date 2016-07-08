@@ -100,16 +100,7 @@ func NewBinding() *Binding {
 
 // Equivalent to "import name" in python
 func (b *Binding) Import(name string) error {
-	b.lock.Lock()
-	defer b.lock.Unlock()
-
-	done := make(chan error)
-	defer close(done)
-
-	thread := PtCreate(func() {
-		gil := C.PyGILState_Ensure()
-		defer C.PyGILState_Release(gil)
-
+	b.lockrun(func() (interface{}, error) {
 		if m := python.PyImport_ImportModuleNoBlock(name); m == nil {
 			done <- b.parseException()
 		} else {
@@ -117,14 +108,51 @@ func (b *Binding) Import(name string) error {
 			done <- nil
 		}
 	})
+	// b.lock.Lock()
+	// defer b.lock.Unlock()
 
-	defer thread.Kill()
-	return <-done
+	// done := make(chan error)
+	// defer close(done)
+
+	// thread := PtCreate(func() {
+	// 	gil := C.PyGILState_Ensure()
+	// 	defer C.PyGILState_Release(gil)
+
+	// 	if m := python.PyImport_ImportModuleNoBlock(name); m == nil {
+	// 		done <- b.parseException()
+	// 	} else {
+	// 		b.modules[name] = m
+	// 		done <- nil
+	// 	}
+	// })
+
+	// defer thread.Kill()
+	// return <-done
 }
 
 // Call a python function on passed module. Fails if Binding.Import(moduleName) has not already succeeded
 // If the call raises an exception in python its passed along as a go error
-func (b *Binding) Call(module string, function string, args []interface{}, kwargs map[string]interface{}) ([]interface{}, error) {
+func (b *Binding) Call(module string, function string, args ...interface{}) ([]interface{}, error) {
+	if m, ok := b.modules[module]; !ok {
+		return nil, fmt.Errorf("Cant call python function, module %s has not been imported. Did you call Import(moduleName)?", module)
+	} else if fn := m.GetAttrString(function); m == fn {
+		return nil, b.parseException()
+	} else {
+
+		a := python.PyTuple_New(2)
+		python.PyTuple_SET_ITEM(a, 0, python.PyString_FromString(args[0].(string)))
+		python.PyTuple_SET_ITEM(a, 1, python.PyInt_FromLong(args[1].(int)))
+
+		ret := fn.CallObject(a)
+
+		// Python threw an exception! Return an error here to the go caller?
+		if ret == nil {
+			python.PyErr_PrintEx(false)
+		}
+
+		fmt.Println("GO: Done", ret)
+	}
+
 	return nil, nil
 }
 
@@ -132,6 +160,28 @@ func (b *Binding) Call(module string, function string, args []interface{}, kwarg
 // TODO: raise exceptions in python
 func (b *Binding) Export(fn func([]interface{}, map[string]interface{}) ([]interface{}, error)) {
 
+}
+
+// Lock the GIL, execute the passed function, return the results
+func (b *Binding) lockrun(fn func() (interface{}, error)) (interface{}, error) {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
+	err := make(chan error)
+	defer close(err)
+
+	thread := PtCreate(func() {
+		gil := C.PyGILState_Ensure()
+		defer C.PyGILState_Release(gil)
+
+		_, e := fn()
+		err <- e
+	})
+
+	defer thread.Kill()
+	e := <-err
+
+	return nil, e
 }
 
 // Process a python exception: return the reason, the stack trace, and clear the exception flag

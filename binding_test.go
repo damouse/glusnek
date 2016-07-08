@@ -13,3 +13,13 @@ func TestImport(t *testing.T) {
 	e := b.Import("adder")
 	assert.Nil(t, e)
 }
+
+// func TestCall(t *testing.T) {
+// 	b := NewBinding()
+
+// 	b.Import("adder")
+// 	r, e := b.Call("adder", "birthday", "bill", 15)
+
+// 	fmt.Println(r)
+// 	assert.Nil(t, e)
+// }
