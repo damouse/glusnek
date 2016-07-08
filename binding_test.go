@@ -15,7 +15,7 @@ func TestImport(t *testing.T) {
 	assert.Nil(t, e)
 }
 
-func TestCall(t *testing.T) {
+func TestCallPy(t *testing.T) {
 	b := NewBinding()
 
 	b.Import("adder")

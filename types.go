@@ -80,6 +80,20 @@ func togo(o *python.PyObject) (interface{}, error) {
 	} else if python.PyLong_Check(o) {
 		return python.PyLong_AsDouble(o), nil
 
+	} else if python.PyTuple_Check(o) {
+		size := python.PyTuple_Size(o)
+		converted := []interface{}{}
+
+		for i := 0; i < size; i++ {
+			if c, e := togo(python.PyTuple_GetItem(o, i)); e != nil {
+				return nil, e
+			} else {
+				converted = append(converted, c)
+			}
+		}
+
+		return converted, nil
+
 	} else {
 		return nil, fmt.Errorf("Unknown type converting to go!")
 	}
