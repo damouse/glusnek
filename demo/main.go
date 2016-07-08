@@ -5,9 +5,6 @@ import "github.com/damouse/gosnake"
 // Simple starter script to kick off the go core
 
 func main() {
-	// Init python environment
-	gosnake.InitPyEnv()
-
 	// Start the server
 	end := make(chan bool)
 

@@ -1,8 +1,10 @@
 # gosnake
 
-Bi-directional, high level language bindings with automatic type conversion between go and python. Features goroutine-safe python invocation!
+Call from python to go and back. Goroutine/GIL safe bindings with automatic type conversion. 
 
-Tested on Ubuntu 15.04 with python 2.7. No support for python 3 yet. 
+While either language can call the other, go has to start the show: in other words this library embeds python within go. To embed go within python check out (gopy)[https://github.com/go-python/gopy].
+
+Tested with go1.6, Ubuntu 15.04, python 2.7. No support for python 3 yet. 
 
 ## Getting Started
 

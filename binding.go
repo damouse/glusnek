@@ -17,11 +17,16 @@ package gosnake
 inline PyObject *PyNone() {Py_INCREF(Py_None); return Py_None;}
 
 // A call from python to go. This is implemented below in go
-extern PyObject* PythonInvocation(PyObject *self, PyObject *args);
+extern PyObject* pyInvocation(PyObject *self, PyObject *args);
 
 // Part of the threading implmentation
 extern void createThreadCallback();
 static void sig_func(int sig);
+
+static PyMethodDef ModuleMethods[] = {
+    {"gocall", pyInvocation, METH_VARARGS, "doc string"},
+    {NULL},
+};
 
 // Set up the python environment and inject gosnake as a virtual-python module
 static void initialize_python () {
@@ -32,11 +37,6 @@ static void initialize_python () {
     if (PyEval_ThreadsInitialized() == 0) {
         PyEval_InitThreads();
     }
-
-    static PyMethodDef ModuleMethods[] = {
-        {"gocall", PythonInvocation, METH_VARARGS, "doc string"},
-        {NULL},
-    };
 
     Py_InitModule("gosnake", ModuleMethods);
     PyEval_ReleaseThread(PyGILState_GetThisThreadState());
@@ -68,6 +68,84 @@ import (
 	"github.com/sbinet/go-python"
 )
 
+// Package initialization
+func init() {
+	C.initialize_python()
+	C.register_sig_handler()
+	create_callback = make(chan ThreadCallback, 1)
+}
+
+// Wraps all state and management information for a binding
+type Binding struct {
+	lock *sync.Mutex
+
+	thread uintptr
+
+	threadCallback chan ThreadCallback
+
+	modules map[string]*python.PyObject
+}
+
+func NewBinding() *Binding {
+	return &Binding{
+		lock:           &sync.Mutex{},
+		thread:         0,
+		threadCallback: make(chan ThreadCallback, 1),
+		modules:        map[string]*python.PyObject{},
+	}
+}
+
+// Equivalent to "import name" in python
+func (b *Binding) Import(name string) error {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
+	done := make(chan error)
+	defer close(done)
+
+	thread := PtCreate(func() {
+		gil := C.PyGILState_Ensure()
+		defer C.PyGILState_Release(gil)
+
+		if m := python.PyImport_ImportModuleNoBlock(name); m == nil {
+			done <- b.parseException()
+		} else {
+			b.modules[name] = m
+			done <- nil
+		}
+	})
+
+	defer thread.Kill()
+	return <-done
+
+	// if m := python.PyImport_ImportModuleNoBlock(name); m == nil {
+	// 	return b.parseException()
+	// } else {
+	// 	b.modules[name] = m
+	// 	return nil
+	// }
+}
+
+// Call a python function on passed module. Fails if Binding.Import(moduleName) has not already succeeded
+// If the call raises an exception in python its passed along as a go error
+func (b *Binding) Call(moduleName string, args []interface{}, kwargs map[string]interface{}) ([]interface{}, error) {
+	return nil, nil
+}
+
+// Make a go method that takes a slice and a map callable from python
+// TODO: raise exceptions in python
+func (b *Binding) Export(fn func([]interface{}, map[string]interface{}) ([]interface{}, error)) {
+
+}
+
+// Process a python exception: return the reason, the stack trace, and clear the exception flag
+func (b *Binding) parseException() error {
+	python.PyErr_PrintEx(false)
+
+	// TODO: extract the exception information and format it nicely instead of just printing out
+	return fmt.Errorf("Python operation failed")
+}
+
 var lock sync.Mutex
 
 type Thread uintptr
@@ -75,14 +153,8 @@ type ThreadCallback func()
 
 var create_callback chan ThreadCallback
 
-func InitPyEnv() {
-	C.initialize_python()
-	C.register_sig_handler()
-	create_callback = make(chan ThreadCallback, 1)
-}
-
-//export PythonInvocation
-func PythonInvocation(self *C.PyObject, args *C.PyObject) *C.PyObject {
+//export pyInvocation
+func pyInvocation(self *C.PyObject, args *C.PyObject) *C.PyObject {
 	fmt.Println("GO: invocation", args)
 
 	// a := python.PyObject_FromVoidPtr(unsafe.Pointer(args))

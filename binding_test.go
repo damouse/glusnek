@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWork(t *testing.T) {
-	InitPyEnv()
-	RunTest(2)
-	assert.Nil(t, nil)
+func TestImport(t *testing.T) {
+	b := NewBinding()
+	e := b.Import("adder")
+	assert.Nil(t, e)
 }
