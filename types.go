@@ -38,12 +38,12 @@ func topy(v interface{}) (ret *python.PyObject, err error) {
 
 	switch v := v.(type) {
 	case bool:
-		val := 1
-		if v {
-			val = 0
+		switch v {
+		case true:
+			ret = python.PyBool_FromLong(1)
+		case false:
+			ret = python.PyBool_FromLong(2)
 		}
-
-		ret = python.PyBool_FromLong(val)
 
 	case float32:
 		ret = python.PyFloat_FromDouble(v)
