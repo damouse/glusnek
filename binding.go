@@ -100,34 +100,17 @@ func NewBinding() *Binding {
 
 // Equivalent to "import name" in python
 func (b *Binding) Import(name string) error {
-	b.lockrun(func() (interface{}, error) {
+	m, e := b.lockrun(func() (interface{}, error) {
 		if m := python.PyImport_ImportModuleNoBlock(name); m == nil {
-			done <- b.parseException()
+			// done <- b.parseException()
+			e := b.parseException()
+			return nil, e
 		} else {
-			b.modules[name] = m
-			done <- nil
+			return nil, nil
 		}
 	})
-	// b.lock.Lock()
-	// defer b.lock.Unlock()
 
-	// done := make(chan error)
-	// defer close(done)
-
-	// thread := PtCreate(func() {
-	// 	gil := C.PyGILState_Ensure()
-	// 	defer C.PyGILState_Release(gil)
-
-	// 	if m := python.PyImport_ImportModuleNoBlock(name); m == nil {
-	// 		done <- b.parseException()
-	// 	} else {
-	// 		b.modules[name] = m
-	// 		done <- nil
-	// 	}
-	// })
-
-	// defer thread.Kill()
-	// return <-done
+	return e
 }
 
 // Call a python function on passed module. Fails if Binding.Import(moduleName) has not already succeeded
@@ -167,21 +150,30 @@ func (b *Binding) lockrun(fn func() (interface{}, error)) (interface{}, error) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
-	err := make(chan error)
-	defer close(err)
+	errChan := make(chan error)
+	resultChan := make(chan interface{})
+	defer close(errChan)
+	defer close(resultChan)
 
 	thread := PtCreate(func() {
 		gil := C.PyGILState_Ensure()
 		defer C.PyGILState_Release(gil)
 
-		_, e := fn()
-		err <- e
+		if r, e := fn(); e != nil {
+			errChan <- b.parseException()
+		} else {
+			resultChan <- r
+		}
 	})
 
 	defer thread.Kill()
-	e := <-err
 
-	return nil, e
+	select {
+	case e := <-errChan:
+		return nil, e
+	case r := <-resultChan:
+		return r, nil
+	}
 }
 
 // Process a python exception: return the reason, the stack trace, and clear the exception flag
