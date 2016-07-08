@@ -2,10 +2,8 @@ package gosnake
 
 // Conversion between C.Python and python.PyObject types to and from G
 
-/*
-#cgo pkg-config: python-2.7
-#include "Python.h"
-*/
+// #cgo pkg-config: python-2.7
+// #include "Python.h"
 import "C"
 
 import (
