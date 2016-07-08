@@ -134,7 +134,7 @@ func (b *Binding) Import(name string) error {
 
 // Call a python function on passed module. Fails if Binding.Import(moduleName) has not already succeeded
 // If the call raises an exception in python its passed along as a go error
-func (b *Binding) Call(module string, function string, args ...interface{}) ([]interface{}, error) {
+func (b *Binding) Call(module string, function string, args ...interface{}) (interface{}, error) {
 	if m, ok := b.modules[module]; !ok {
 		return nil, fmt.Errorf("Cant call python function, module %s has not been imported. Did you call Import(moduleName)?", module)
 	} else if fn := m.GetAttrString(function); m == fn {
@@ -147,7 +147,7 @@ func (b *Binding) Call(module string, function string, args ...interface{}) ([]i
 
 		errChan := make(chan error)
 		defer close(errChan)
-		resultChan := make(chan []interface{})
+		resultChan := make(chan interface{})
 		defer close(resultChan)
 
 		thread := PtCreate(func() {
@@ -167,8 +167,14 @@ func (b *Binding) Call(module string, function string, args ...interface{}) ([]i
 				python.PyErr_PrintEx(false)
 				errChan <- b.parseException()
 			} else {
-				fmt.Println("GO: python call completed")
-				resultChan <- nil //ret
+				fmt.Println("GO: python call completed, ", ret)
+
+				if cast, e := togo(ret); e != nil {
+					errChan <- e
+				} else {
+					fmt.Println("GO: python call completed, ", cast)
+					resultChan <- cast
+				}
 			}
 		})
 

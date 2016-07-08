@@ -7,8 +7,9 @@ import gosnake
 
 def birthday(*args):
     print "PY: birthday- ", args
+    # gosnake.gocall()
 
-    gosnake.gocall()
+    return args
 
 
 # dynamically call a method on gosnak
