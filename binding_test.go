@@ -3,6 +3,7 @@ package gosnake
 // WARN: PYTHONPATH must be set to demo before tests can run!
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,12 +15,12 @@ func TestImport(t *testing.T) {
 	assert.Nil(t, e)
 }
 
-// func TestCall(t *testing.T) {
-// 	b := NewBinding()
+func TestCall(t *testing.T) {
+	b := NewBinding()
 
-// 	b.Import("adder")
-// 	r, e := b.Call("adder", "birthday", "bill", 15)
+	b.Import("adder")
+	r, e := b.Call("adder", "birthday", "bill", 15)
 
-// 	fmt.Println(r)
-// 	assert.Nil(t, e)
-// }
+	fmt.Println(r)
+	assert.Nil(t, e)
+}

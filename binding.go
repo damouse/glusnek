@@ -100,17 +100,26 @@ func NewBinding() *Binding {
 
 // Equivalent to "import name" in python
 func (b *Binding) Import(name string) error {
-	m, e := b.lockrun(func() (interface{}, error) {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
+	done := make(chan error)
+	defer close(done)
+
+	thread := PtCreate(func() {
+		gil := C.PyGILState_Ensure()
+		defer C.PyGILState_Release(gil)
+
 		if m := python.PyImport_ImportModuleNoBlock(name); m == nil {
-			// done <- b.parseException()
-			e := b.parseException()
-			return nil, e
+			done <- b.parseException()
 		} else {
-			return nil, nil
+			b.modules[name] = m
+			done <- nil
 		}
 	})
 
-	return e
+	defer thread.Kill()
+	return <-done
 }
 
 // Call a python function on passed module. Fails if Binding.Import(moduleName) has not already succeeded
@@ -122,58 +131,52 @@ func (b *Binding) Call(module string, function string, args ...interface{}) ([]i
 		return nil, b.parseException()
 	} else {
 
-		a := python.PyTuple_New(2)
-		python.PyTuple_SET_ITEM(a, 0, python.PyString_FromString(args[0].(string)))
-		python.PyTuple_SET_ITEM(a, 1, python.PyInt_FromLong(args[1].(int)))
+		// Start lockrun inline
+		b.lock.Lock()
+		defer b.lock.Unlock()
 
-		ret := fn.CallObject(a)
+		errChan := make(chan error)
+		defer close(errChan)
+		resultChan := make(chan []interface{})
+		defer close(resultChan)
 
-		// Python threw an exception! Return an error here to the go caller?
-		if ret == nil {
-			python.PyErr_PrintEx(false)
+		thread := PtCreate(func() {
+			gil := C.PyGILState_Ensure()
+			defer C.PyGILState_Release(gil)
+
+			// TODO: deserialization
+			a := python.PyTuple_New(2)
+			python.PyTuple_SET_ITEM(a, 0, python.PyString_FromString(args[0].(string)))
+			python.PyTuple_SET_ITEM(a, 1, python.PyInt_FromLong(args[1].(int)))
+
+			// Call to python
+			ret := fn.CallObject(a)
+
+			// Python threw an exception! Return an error here to the go caller?
+			if ret == nil {
+				python.PyErr_PrintEx(false)
+				errChan <- b.parseException()
+			} else {
+				fmt.Println("GO: python call completed")
+				resultChan <- nil //ret
+			}
+		})
+
+		defer thread.Kill()
+
+		select {
+		case e := <-errChan:
+			return nil, e
+		case r := <-resultChan:
+			return r, nil
 		}
-
-		fmt.Println("GO: Done", ret)
 	}
-
-	return nil, nil
 }
 
 // Make a go method that takes a slice and a map callable from python
 // TODO: raise exceptions in python
 func (b *Binding) Export(fn func([]interface{}, map[string]interface{}) ([]interface{}, error)) {
 
-}
-
-// Lock the GIL, execute the passed function, return the results
-func (b *Binding) lockrun(fn func() (interface{}, error)) (interface{}, error) {
-	b.lock.Lock()
-	defer b.lock.Unlock()
-
-	errChan := make(chan error)
-	resultChan := make(chan interface{})
-	defer close(errChan)
-	defer close(resultChan)
-
-	thread := PtCreate(func() {
-		gil := C.PyGILState_Ensure()
-		defer C.PyGILState_Release(gil)
-
-		if r, e := fn(); e != nil {
-			errChan <- b.parseException()
-		} else {
-			resultChan <- r
-		}
-	})
-
-	defer thread.Kill()
-
-	select {
-	case e := <-errChan:
-		return nil, e
-	case r := <-resultChan:
-		return r, nil
-	}
 }
 
 // Process a python exception: return the reason, the stack trace, and clear the exception flag
