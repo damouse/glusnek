@@ -9,3 +9,9 @@ def birthday(*args):
     print "PY: birthday- ", args
 
     gosnake.gocall()
+
+
+# dynamically call a method on gosnak
+def callback(name, *args, **kwargs):
+    func = eval("gosnake." + name)
+    func(args, kwargs)

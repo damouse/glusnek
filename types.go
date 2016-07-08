@@ -28,94 +28,54 @@ import "C"
 
 import (
 	"fmt"
-	"unsafe"
 
 	"github.com/sbinet/go-python"
 )
 
-// pyfmt returns the python format string for a given go value
-func pyfmt(v interface{}) (unsafe.Pointer, string) {
+// Conversion to python types (go -> python)
+func topy(v interface{}) (ret *python.PyObject, err error) {
+	// return (*C.PyObject)(unsafe.Pointer(self))
+
 	switch v := v.(type) {
 	case bool:
-		return unsafe.Pointer(&v), "b"
-
-		//  case byte:
-		//      return unsafe.Pointer(&v), "b"
-
-	case int8:
-		return unsafe.Pointer(&v), "b"
-
-	case int16:
-		return unsafe.Pointer(&v), "h"
-
-	case int32:
-		return unsafe.Pointer(&v), "i"
-
-	case int64:
-		return unsafe.Pointer(&v), "k"
-
-	case int:
-		switch unsafe.Sizeof(int(0)) {
-		case 4:
-			return unsafe.Pointer(&v), "i"
-		case 8:
-			return unsafe.Pointer(&v), "k"
+		val := 1
+		if v {
+			val = 0
 		}
 
-	case uint8:
-		return unsafe.Pointer(&v), "B"
-
-	case uint16:
-		return unsafe.Pointer(&v), "H"
-
-	case uint32:
-		return unsafe.Pointer(&v), "I"
-
-	case uint64:
-		return unsafe.Pointer(&v), "K"
-
-	case uint:
-		switch unsafe.Sizeof(uint(0)) {
-		case 4:
-			return unsafe.Pointer(&v), "I"
-		case 8:
-			return unsafe.Pointer(&v), "K"
-		}
+		ret = python.PyBool_FromLong(val)
 
 	case float32:
-		return unsafe.Pointer(&v), "f"
+		ret = python.PyFloat_FromDouble(v)
 
 	case float64:
-		return unsafe.Pointer(&v), "d"
+		ret = python.PyLong_FromDouble(v)
 
-	case complex64:
-		return unsafe.Pointer(&v), "D"
-
-	case complex128:
-		return unsafe.Pointer(&v), "D"
+	case int:
+		ret = python.PyInt_FromLong(v)
 
 	case string:
-		cstr := C.CString(v)
-		return unsafe.Pointer(cstr), "s"
+		ret = python.PyString_FromString(v)
 
 	case *python.PyObject:
-		return unsafe.Pointer((*C.PyObject)(unsafe.Pointer(v))), "O"
+		ret = v
 
+	default:
+		err = fmt.Errorf("python: unknown type (%v)", v)
 	}
 
-	panic(fmt.Errorf("python: unknown type (%v)", v))
-}
-
-// Conversion to python types (go -> python)
-func topy(self *python.PyObject) *C.PyObject {
-	return (*C.PyObject)(unsafe.Pointer(self))
+	return
 }
 
 // Conversion to go types (python -> go)
-func togo(obj *C.PyObject) *python.PyObject {
-	if obj == nil {
-		return nil
-	}
+func togo(o *python.PyObject) (interface{}, error) {
+	if python.PyString_Check(o) {
+		return python.PyString_AsString(o), nil
 
-	return python.PyObject_FromVoidPtr(unsafe.Pointer(obj))
+	} else if python.PyInt_Check(o) {
+		return python.PyInt_AsLong(o), nil
+
+	} else {
+		return nil, fmt.Errorf("Unknown type converting to go!")
+	}
 }
