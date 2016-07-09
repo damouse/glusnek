@@ -8,26 +8,33 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestImport(t *testing.T) {
-	b := NewBinding()
-	e := b.Import("adder")
-	assert.Nil(t, e)
+func TestSuccessfulImport(t *testing.T) {
+	module, err := Import("adder")
+
+	assert.Nil(t, err)
+	assert.Equal(t, "adder", module.name)
+	assert.Equal(t, _INITIALIZED, true)
+}
+
+func TestBadImport(t *testing.T) {
+	_, err := Import("idontexist")
+	assert.NotNil(t, err)
 }
 
 //
 // Go -> Py
 //
-func TestCallPy(t *testing.T) {
-	b := NewBinding()
-	b.Import("adder")
+// func TestCallPy(t *testing.T) {
+// 	b := NewBinding()
+// 	b.Import("adder")
 
-	r, e := b.Call("adder", "birthday", "bill", 15)
+// 	r, e := b.Call("adder", "birthday", "bill", 15)
 
-	assert.Nil(t, e)
-	cast := r.([]interface{})
-	assert.Equal(t, "bill", cast[0].(string))
-	assert.Equal(t, 15, cast[1].(int))
-}
+// 	assert.Nil(t, e)
+// 	cast := r.([]interface{})
+// 	assert.Equal(t, "bill", cast[0].(string))
+// 	assert.Equal(t, 15, cast[1].(int))
+// }
 
 //
 // Py -> Go

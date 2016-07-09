@@ -55,6 +55,7 @@ static PyObject* _gosnake_receive(PyObject *self, PyObject *args) {
     // Finish up and return
     check_pyerr();
     // PyGILState_Release(gil);
+    
     return _result;
 }
 
@@ -79,4 +80,15 @@ static void pyinit (int log) {
     if (log != 0) {
         fprintf(stdout, "gosnake: initialized python env\n");
     }
+}
+static void sig_func(int sig) {
+    fprintf(stdout, "gosnake: handling exit signal\n");
+    check_pyerr();
+
+    signal(SIGSEGV, sig_func);
+    pthread_exit(NULL);
+}
+
+static void register_sig_handler() {
+    signal(SIGSEGV,sig_func);
 }

@@ -12,6 +12,11 @@ func Import(name string) (*Module, error) {
 	// Ensure we're initialized
 	initializeBinding()
 
+	// Make sure the module actually exists
+	if err := tryImport(name); err != nil {
+		return nil, err
+	}
+
 	m := &Module{
 		name: name,
 	}

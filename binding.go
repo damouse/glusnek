@@ -1,11 +1,17 @@
 package gosnake
 
+// Manages the interface between python and go code.
+//
+// Need at least one global to route incoming python calls into their respective handlers
+// Arguably the rest of this can be trashed, but I'm going to leave it here for now
+
 //#cgo pkg-config: python-2.7
 //#include "binding.h"
 import "C"
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/liamzdenek/go-pthreads"
 	"github.com/sbinet/go-python"
@@ -33,9 +39,11 @@ type Operation struct {
 func initializeBinding() {
 	if _INITIALIZED {
 		return
+	} else {
+		_INITIALIZED = true
 	}
 
-	C.pyinit(C.int(1))
+	C.pyinit(C.int(0))
 	C.register_sig_handler()
 
 	opChan = make(chan *Operation)
@@ -45,8 +53,19 @@ func initializeBinding() {
 		t := pthread.Create(threadConsume)
 		pool = append(pool, &t)
 	}
+}
 
-	_INITIALIZED = true
+// Make sure that a module can actually be imported
+func tryImport(name string) error {
+	gil := python.PyGILState_Ensure()
+	defer python.PyGILState_Release(gil)
+
+	if m := python.PyImport_ImportModule(name); m == nil {
+		return fmt.Errorf("Could not find a python module named \"%s\"", name)
+	} else {
+		m.DecRef()
+		return nil
+	}
 }
 
 // Consume an operation from the queue
