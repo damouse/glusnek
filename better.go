@@ -40,13 +40,12 @@ import "C"
 import (
 	"encoding/json"
 	"fmt"
-	"unsafe"
 
 	"github.com/liamzdenek/go-pthreads"
 	"github.com/sbinet/go-python"
 )
 
-func create_thread(cb func(a *C.PyObject)) {
+func create_thread(cb func(a *python.PyObject)) {
 
 	// C.createThreade(_pid)
 	done := make(chan error)
@@ -63,10 +62,9 @@ func create_thread(cb func(a *C.PyObject)) {
 		args := python.PyTuple_New(2)
 		python.PyTuple_SET_ITEM(args, 0, python.PyString_FromString("Hello!"))
 		python.PyTuple_SET_ITEM(args, 1, python.PyInt_FromLong(1234))
-		ret := fn.CallObject(args)
 
-		resultAsPyobj := (*C.PyObject)(unsafe.Pointer(ret))
-		cb(resultAsPyobj)
+		ret := fn.CallObject(args)
+		cb(ret)
 
 		// result := C.thread_callback()
 		// cb(result)
@@ -80,10 +78,12 @@ func create_thread(cb func(a *C.PyObject)) {
 
 func BetterTest() {
 	for i := 0; i < 500; i++ {
-		go create_thread(func(result *C.PyObject) {
+		go create_thread(func(result *python.PyObject) {
 			for i := 0; i < 500; i++ {
 
-				_result_string := C.GoString(C.PyString_AsString(result))
+				_result_string := python.PyString_AsString(result)
+				// _result_string := C.GoString(C.PyString_AsString(result))
+
 				fmt.Printf("< got result string: %v (%T)\n", _result_string, _result_string)
 
 				var _parsed []interface{}
