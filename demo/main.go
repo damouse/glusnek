@@ -6,40 +6,60 @@ import "C"
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/damouse/gosnake"
 )
 
-func roundtwo() {
-	gosnake.Initialize()
-	gosnake.BetterTest(3, 3)
+// Stress test the bindings
+func stress() {
+	module, err := gosnake.Import("adder")
+	checkError(err)
+
+	routines := 100
+	iterations := 100
+
+	wg := sync.WaitGroup{}
+	wg.Add(routines)
+
+	for i := 0; i < routines; i++ {
+		go func(gid int) {
+			for j := 0; j < iterations; j++ {
+
+				ret, err := module.Call("run", "hello", 1)
+				checkError(err)
+				fmt.Printf("(%d  %d) \t%s\n", gid, j, ret)
+
+			}
+
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
+	fmt.Println("\nInternal Done")
 }
 
 func demos() {
-	pymodule := gosnake.NewBinding()
-	pymodule.Import("adder")
+	module, _ := gosnake.Import("adder")
+	result, err := module.Call("run", "hello", 1)
 
-	pymodule.Export("callme", func(args []interface{}, kwargs map[string]interface{}) ([]interface{}, error) {
-		fmt.Println("Go function called!", args, kwargs)
-		// return args, nil
-		return nil, nil
-	})
-
-	c := make(chan bool)
-	for i := 0; i < 100000; i++ {
-		// go func() {
-		r, e := pymodule.Call("adder", "callback", "callme", 1, "2", 3.3)
-		fmt.Println("Result: ", r, e)
-		// }()
+	if err != nil {
+		fmt.Println("Error: ", err)
+	} else {
+		fmt.Println("Success: ", result)
 	}
+}
 
-	fmt.Println("\nDone")
-	<-c
+func checkError(e error) {
+	if e != nil {
+		panic(e)
+	}
 }
 
 func main() {
 	// demos()
-	roundtwo()
+	stress()
 }
 
 // fatal error: unexpected signal during runtime execution
