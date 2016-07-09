@@ -9,6 +9,7 @@ import "C"
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 
 	"github.com/liamzdenek/go-pthreads"
 	"github.com/sbinet/go-python"
@@ -44,9 +45,13 @@ func PyCall() string {
 }
 
 func BetterTest() {
-	for i := 0; i < 100; i++ {
+	n := 80
+	wg := sync.WaitGroup{}
+	wg.Add(n)
+
+	for i := 0; i < n; i++ {
 		go func(gid int) {
-			for j := 0; j < 100; j++ {
+			for j := 0; j < 2; j++ {
 				rs := PyCall()
 
 				var retjson []interface{}
@@ -56,6 +61,11 @@ func BetterTest() {
 
 				fmt.Printf("gorutine: %d iteration: %d pid: %f\n", gid, j, retjson[0])
 			}
+
+			wg.Done()
 		}(i)
 	}
+
+	wg.Wait()
+	fmt.Println("\nInternal Done")
 }
