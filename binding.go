@@ -36,7 +36,7 @@ func initializeBinding() {
 	}
 
 	C.pyinit(C.int(1))
-	// C.register_sig_handler()
+	C.register_sig_handler()
 
 	opChan = make(chan *Operation)
 	pool = make([]*pthread.Thread, POOL_SIZE)
