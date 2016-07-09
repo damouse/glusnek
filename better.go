@@ -49,12 +49,16 @@ func threadConsume() {
 		fn.IncRef()
 
 		// Pack the arguments
-		// args := python.PyTuple_New(2)
-		// python.PyTuple_SET_ITEM(args, 0, python.PyString_FromString("Hello!"))
-		// python.PyTuple_SET_ITEM(args, 1, python.PyInt_FromLong(1234))
+		args := python.PyTuple_New(2)
+		a1 := python.PyString_FromString("Hello!")
+		a2 := python.PyInt_FromLong(1234)
+		python.PyTuple_SET_ITEM(args, 0, a1)
+		python.PyTuple_SET_ITEM(args, 1, a2)
 
-		args := python.PyTuple_New(0)
+		// Retain the arguments
 		args.IncRef()
+		a1.IncRef()
+		a2.IncRef()
 
 		// Call into Python
 		ret := fn.CallObject(args)
@@ -67,6 +71,9 @@ func threadConsume() {
 		args.DecRef()
 		m.DecRef()
 		fn.DecRef()
+		args.DecRef()
+		a1.DecRef()
+		a2.DecRef()
 
 		// Release the Gil
 		python.PyGILState_Release(gil)
