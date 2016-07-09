@@ -3,6 +3,7 @@ package gosnake
 // Binding between go and python, with pthreading implmementation
 // Python and C are leaking badly. Comment out big chunks of functionality and parsing until its found,
 // then work backwards.
+// Also try working off just one pthread.
 
 //#cgo pkg-config: python-2.7
 //#include "Python.h"
@@ -19,14 +20,13 @@ import (
 
 type ExportedFunction func([]interface{}, map[string]interface{}) ([]interface{}, error)
 
-var lock sync.Mutex
-
 type Thread uintptr
 type ThreadCallback func()
 
 var create_callback chan ThreadCallback
 
 // Because the invocation method is static we have to hold a global reference to these guys. Not ecstatic about that
+var bindingsLock *sync.Mutex = &sync.Mutex{}
 var allBindings []*Binding = []*Binding{}
 
 func init() {
@@ -56,6 +56,8 @@ func NewBinding() *Binding {
 		exports:        map[string]*ExportedFunction{},
 	}
 
+	bindingsLock.Lock()
+	defer bindingsLock.Unlock()
 	allBindings = append(allBindings, b)
 	return b
 }
@@ -187,6 +189,7 @@ func pyInvocation(self *C.PyObject, args *C.PyObject) *C.PyObject {
 	}
 
 	// Search for exported method
+	bindingsLock.Lock()
 	var fn ExportedFunction
 	for _, binding := range allBindings {
 		for name, f := range binding.exports {
@@ -195,6 +198,7 @@ func pyInvocation(self *C.PyObject, args *C.PyObject) *C.PyObject {
 			}
 		}
 	}
+	bindingsLock.Unlock()
 
 	if fn == nil {
 		fmt.Println("GO: no function exported as ", target)
