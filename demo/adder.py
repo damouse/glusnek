@@ -27,10 +27,5 @@ def callback(name, *args, **kwargs):
 
 
 def run(*a):
-    print "PY: run: ", a
-    return json.dumps(
-        [
-            threading.currentThread().ident,
-            datetime.datetime.now().isoformat(),
-        ] + list(a),
-    )
+    # print "PY: run: ", a
+    return json.dumps([threading.currentThread().ident] + list(a))

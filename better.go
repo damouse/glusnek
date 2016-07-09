@@ -3,37 +3,6 @@ package gosnake
 /*
 #cgo pkg-config: python-2.7
 #include "Python.h"
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <pthread.h>
-#include <unistd.h>
-#include <stdio.h>
-
-static PyObject* thread_callback() {
-    PyObject *_module_name, *_module;
-    PyGILState_STATE _gstate;
-
-    // Initialize python GIL state
-    _gstate = PyGILState_Ensure();
-
-    // Now execute some python code (call python functions)
-    _module_name = PyString_FromString("adder");
-    _module = PyImport_Import(_module_name);
-
-    // Call a method of the class with no parameters
-    PyObject *_attr, *_result;
-    _attr = PyObject_GetAttr(_module, PyString_FromString("run"));
-    _result = PyObject_CallObject(_attr, NULL);
-
-    // Clean up
-    Py_DECREF(_module);
-    Py_DECREF(_module_name);
-    Py_DECREF(_attr);
-
-    PyGILState_Release(_gstate);
-    return _result;
-}
 */
 import "C"
 
@@ -46,11 +15,10 @@ import (
 )
 
 func create_thread(cb func(a *python.PyObject)) {
-
-	// C.createThreade(_pid)
 	done := make(chan error)
 
-	t := pthread.Create(func() {
+	var t pthread.Thread
+	t = pthread.Create(func() {
 		// Lets try it with the gopython code...
 		gil := C.PyGILState_Ensure()
 		defer C.PyGILState_Release(gil)
@@ -66,10 +34,8 @@ func create_thread(cb func(a *python.PyObject)) {
 		ret := fn.CallObject(args)
 		cb(ret)
 
-		// result := C.thread_callback()
-		// cb(result)
-
 		done <- nil
+		// t.Kill()
 	})
 
 	<-done
@@ -77,21 +43,20 @@ func create_thread(cb func(a *python.PyObject)) {
 }
 
 func BetterTest() {
-	for i := 0; i < 500; i++ {
-		go create_thread(func(result *python.PyObject) {
-			for i := 0; i < 500; i++ {
+	for i := 0; i < 3; i++ {
+		go func() {
+			// for j := 0; j < 10; j++ {
+			create_thread(func(result *python.PyObject) {
+				rs := python.PyString_AsString(result)
 
-				_result_string := python.PyString_AsString(result)
-				// _result_string := C.GoString(C.PyString_AsString(result))
-
-				fmt.Printf("< got result string: %v (%T)\n", _result_string, _result_string)
-
-				var _parsed []interface{}
-				if _err := json.Unmarshal([]byte(_result_string), &_parsed); _err != nil {
-					panic(fmt.Errorf("got invalid result from python function, `%v`\n", _result_string))
+				var retjson []interface{}
+				if _err := json.Unmarshal([]byte(rs), &retjson); _err != nil {
+					panic(fmt.Errorf("got invalid result from python function, `%v`\n", rs))
 				}
-			}
 
-		})
+				fmt.Printf("gorutine: %d iteration: %d pid: %f\n", i, i, retjson[0])
+			})
+			// }
+		}()
 	}
 }
