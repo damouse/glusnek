@@ -39,28 +39,16 @@ static void check_pyerr(void *result, char *location) {
     }
 }
 
-static PyObject *callJson (char *s) {
-    PyObject *_module, *_stringio, *_args;
-
-    _module = PyImport_Import(PyString_FromString("json"));
-    _stringio = PyObject_GetAttr(_module, PyString_FromString("loads"));
-
-    _args = Py_BuildValue("(z)", s);
-
-    return PyObject_CallObject(_stringio, _args);
-}
-
 
 static PyObject* _gosnake_receive(PyObject *self, PyObject *args) {
     // route the call into Go
     char *result = _gosnake_invoke(self, args);
     PyObject *pyStringResult = PyString_FromString(result);
+    check_pyerr(pyStringResult, "converting go string result into python string");
 
     // import json
     PyObject *json = PyImport_Import(PyString_FromString("json"));
     PyObject *loads = PyObject_GetAttr(json, PyString_FromString("loads"));
-    check_pyerr(json, "import json");
-    check_pyerr(loads, "import loads");
 
     // Build args tuple
     PyObject *tup = PyTuple_New(1);
@@ -72,7 +60,6 @@ static PyObject* _gosnake_receive(PyObject *self, PyObject *args) {
     check_pyerr(_result, "calling json.loads");
 
     return _result;
-    return PYNONE();
 }
 
 static PyMethodDef GosnakeMethods[] = {
