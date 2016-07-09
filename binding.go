@@ -202,9 +202,27 @@ func pyInvocation(self *C.PyObject, args *C.PyObject) *C.PyObject {
 		fmt.Println("GO: exported function erred. Name:", target, err)
 	}
 
-	// cstr := C.CString("hi from go\n")
+	// Works, is a c type
+	return C.PyLong_FromLongLong(1)
+
+	// cstr := python.PyString_FromString("asdfasdfasdf")
+	// nptr := (*C.PyObject)(unsafe.Pointer(cstr))
 	// defer C.free(unsafe.Pointer(cstr))
+	// return (*C.PyObject)(unsafe.Pointer(cstr))
+
+	// cstr := C.CString("Pee")
+	// uptr := unsafe.Pointer(cstr), "s"
+
+	// return (*C.PyObject)(unsafe.Pointer(python.Py_BuildValue("i", 1)))
+
 	return C.PyNone()
+
+	// Attempts to return things to C code
+	// This may be a solution: https://docs.python.org/2/c-api/arg.html#c.Py_BuildValue
+	s := python.PyString_FromString("asdf")
+	unptr := (*C.PyObject)(unsafe.Pointer(&s))
+	defer C.free(unsafe.Pointer(unptr))
+	return unptr
 
 	if ret, err := topy(results); err != nil {
 		fmt.Println("GO: could not convert types back to python. Name:", target, err)
