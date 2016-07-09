@@ -39,12 +39,16 @@ static void check_pyerr(void *result, char *location) {
     }
 }
 
-
+// Called directly from Python. Invokes the go function _gosnake_invoke,
+// runs the results through json.loads, then returns it to python
 static PyObject* _gosnake_receive(PyObject *self, PyObject *args) {
     // route the call into Go
     char *result = _gosnake_invoke(self, args);
     PyObject *pyStringResult = PyString_FromString(result);
     check_pyerr(pyStringResult, "converting go string result into python string");
+
+    // free the string
+    free(result);
 
     // import json
     PyObject *json = PyImport_Import(PyString_FromString("json"));
@@ -58,6 +62,12 @@ static PyObject* _gosnake_receive(PyObject *self, PyObject *args) {
     // Make the call
     PyObject *_result = PyObject_CallObject(loads, tup);
     check_pyerr(_result, "calling json.loads");
+
+    // Cleanup
+    Py_DECREF(json);
+    Py_DECREF(loads);
+    Py_DECREF(tup);
+    Py_DECREF(pyStringResult);
 
     return _result;
 }
@@ -118,8 +128,6 @@ func Initialize() {
 		t := pthread.Create(threadConsume)
 		pool = append(pool, &t)
 	}
-
-	// Export our new module methods
 }
 
 // Consume an operation from the queue
@@ -183,8 +191,6 @@ func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
 	ret := string(b)
 
 	cmode := C.CString(ret)
-	fmt.Println("String as it leaves go: ", C.GoString(cmode))
-	// defer C.free(unsafe.Pointer(cmode))
 	return cmode
 }
 
