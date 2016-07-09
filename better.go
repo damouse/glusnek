@@ -3,6 +3,26 @@ package gosnake
 /*
 #cgo pkg-config: python-2.7
 #include "Python.h"
+#include <stdlib.h>
+#include <string.h>
+#include <pthread.h>
+#include <signal.h>
+#include <unistd.h>
+#include <stdio.h>
+
+static void caught_sig(int sig);
+
+static void caught_sig(int sig) {
+    PyErr_Print();
+    fprintf(stdout, "gosnake: SIGSEGV on %d\n", sig);
+
+    signal(SIGSEGV, caught_sig);
+    pthread_exit(NULL);
+}
+
+static void register_sig_handler() {
+    signal(SIGSEGV, caught_sig);
+}
 */
 import "C"
 
@@ -15,11 +35,17 @@ import (
 	"github.com/sbinet/go-python"
 )
 
+func Initialize() {
+	// C.pyinit(C.int(1))
+	// C.register_sig_handler()
+}
+
 // We can likely pool the pthreads, but that sounds like a problem for future mickey
 func PyCall() string {
 	done := make(chan string)
 
 	t := pthread.Create(func() {
+		// C.register_sig_handler()
 
 		// Lets try it with the gopython code...
 		gil := C.PyGILState_Ensure()
@@ -45,13 +71,13 @@ func PyCall() string {
 }
 
 func BetterTest() {
-	n := 80
+	n := 100
 	wg := sync.WaitGroup{}
 	wg.Add(n)
 
 	for i := 0; i < n; i++ {
 		go func(gid int) {
-			for j := 0; j < 2; j++ {
+			for j := 0; j < 100; j++ {
 				rs := PyCall()
 
 				var retjson []interface{}

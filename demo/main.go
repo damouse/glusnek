@@ -11,6 +11,7 @@ import (
 )
 
 func roundtwo() {
+	gosnake.Initialize()
 	gosnake.BetterTest()
 }
 
