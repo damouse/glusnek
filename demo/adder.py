@@ -35,4 +35,9 @@ def run(*a):
     # ret = gosnake.gocall("Hello!")
     # print "PY: args: ", a, " goret: ", ret
 
+    # Holy crap this works
+    print "Starting a sleep"
+    import time
+    time.sleep(2)  # delays for 5 seconds
+
     return json.dumps([threading.currentThread().ident, counter] + list(a))
