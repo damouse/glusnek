@@ -8,6 +8,8 @@ import json
 import threading
 import datetime
 
+counter = 0
+
 
 def birthday(*args):
     # gosnake.gocall()
@@ -25,14 +27,12 @@ def callback(name, *args, **kwargs):
     # func = eval("gosnake." + name)
     # func(args, kwargs)
 
-
 def run(*a):
+    global counter
+    counter += 1
+
     # print "PY: run: ", a
     ret = gosnake.gocall("Hello!")
     print "PY: args: ", a, " goret: ", ret
 
     return json.dumps([threading.currentThread().ident] + list(a))
-
-# if __name__ == '__main__':
-#     s = "{\"a\": \"Returning from go!\"}"
-#     print json.loads(s)
