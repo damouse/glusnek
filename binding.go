@@ -12,6 +12,7 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/liamzdenek/go-pthreads"
 	"github.com/sbinet/go-python"
 )
 
@@ -60,13 +61,14 @@ func NewBinding() *Binding {
 
 // Equivalent to "import name" in python
 func (b *Binding) Import(name string) error {
+
 	b.lock.Lock()
 	defer b.lock.Unlock()
 
 	done := make(chan error)
 	defer close(done)
 
-	thread := PtCreate(func() {
+	thread := pthread.Create(func() {
 		gil := C.PyGILState_Ensure()
 		defer C.PyGILState_Release(gil)
 
@@ -93,44 +95,54 @@ func (b *Binding) Call(module string, function string, args ...interface{}) (int
 		return nil, b.parseException()
 
 	} else {
+		// Something in this code block is generating segfaults
 
 		b.lock.Lock()
 		defer b.lock.Unlock()
 
-		errChan := make(chan error)
-		defer close(errChan)
-		resultChan := make(chan interface{})
-		defer close(resultChan)
+		// errChan := make(chan error)
+		// defer close(errChan)
+		// resultChan := make(chan interface{})
+		// defer close(resultChan)
 
-		thread := PtCreate(func() {
-			gil := C.PyGILState_Ensure()
-			defer C.PyGILState_Release(gil)
+		// thread := PtCreate(func() {
+		gil := C.PyGILState_Ensure()
+		defer C.PyGILState_Release(gil)
 
-			if tup, e := packTuple(args); e != nil {
-				errChan <- e
-
-			} else if ret := fn.CallObject(tup); ret == nil {
-				python.PyErr_PrintEx(false)
-				errChan <- b.parseException()
-
-			} else if cast, e := togo(ret); e != nil {
-				errChan <- e
-
-			} else {
-				resultChan <- cast
-			}
-		})
-
-		defer thread.Kill()
-
-		select {
-		case e := <-errChan:
+		if tup, e := packTuple(args); e != nil {
+			// errChan <- e
 			return nil, e
-		case r := <-resultChan:
-			return r, nil
+
+		} else if ret := fn.CallObject(tup); ret == nil {
+			python.PyErr_PrintEx(false)
+			// errChan <- b.parseException()
+			return nil, e
+
+		} else if cast, e := togo(ret); e != nil {
+			// errChan <- e
+			return nil, e
+
+		} else {
+			// resultChan <- cast
+			return cast, nil
 		}
+		// })
+
+		// defer thread.Kill()
+
+		// select {
+		// case e := <-errChan:
+		// 	return nil, e
+		// case r := <-resultChan:
+		// 	return r, nil
+		// }
 	}
 }
+
+// Errors I found
+// Fatal Python error: This thread state must be current when releasing
+// C.PyGILState_Release(gil)
+// Fatal Python error: auto-releasing thread-state, but no thread-state for this thread
 
 // Make a go method that takes a slice and a map callable from python
 // TODO
@@ -236,44 +248,44 @@ func pyInvocation(self *C.PyObject, args *C.PyObject) *C.PyObject {
 	return C.PyNone()
 }
 
-//
-// threading
-//
+// //
+// // threading
+// //
 
-//export createThreadCallback
-func createThreadCallback() {
-	C.register_sig_handler()
-	C.pthread_setcanceltype(C.PTHREAD_CANCEL_ASYNCHRONOUS, nil)
-	(<-create_callback)()
-}
+// //export createThreadCallback
+// func createThreadCallback() {
+// 	C.register_sig_handler()
+// 	C.pthread_setcanceltype(C.PTHREAD_CANCEL_ASYNCHRONOUS, nil)
+// 	(<-create_callback)()
+// }
 
-// calls C's sleep function
-func PtSleep(seconds uint) {
-	C.sleep(C.uint(seconds))
-}
+// // calls C's sleep function
+// func PtSleep(seconds uint) {
+// 	C.sleep(C.uint(seconds))
+// }
 
-// initializes a thread using pthread_create
-func PtCreate(cb ThreadCallback) Thread {
-	var pid C.pthread_t
-	pidptr := &pid
-	create_callback <- cb
+// // initializes a thread using pthread_create
+// func PtCreate(cb ThreadCallback) Thread {
+// 	var pid C.pthread_t
+// 	pidptr := &pid
+// 	create_callback <- cb
 
-	C.createThread(pidptr)
+// 	C.createThread(pidptr)
 
-	return Thread(uintptr(unsafe.Pointer(&pid)))
-}
+// 	return Thread(uintptr(unsafe.Pointer(&pid)))
+// }
 
-// determines if the thread is running
-func (t Thread) Running() bool {
-	// magic number "3". oops
-	return int(C.pthread_kill(t.c(), 0)) != 3
-}
+// // determines if the thread is running
+// func (t Thread) Running() bool {
+// 	// magic number "3". oops
+// 	return int(C.pthread_kill(t.c(), 0)) != 3
+// }
 
-func (t Thread) Kill() {
-	C.pthread_kill(t.c(), C.SIGSEGV)
-}
+// func (t Thread) Kill() {
+// 	C.pthread_kill(t.c(), C.SIGSEGV)
+// }
 
-// helper function to convert the Thread object into a C.pthread_t object
-func (t Thread) c() C.pthread_t {
-	return *(*C.pthread_t)(unsafe.Pointer(t))
-}
+// // helper function to convert the Thread object into a C.pthread_t object
+// func (t Thread) c() C.pthread_t {
+// 	return *(*C.pthread_t)(unsafe.Pointer(t))
+// }

@@ -20,8 +20,17 @@ func demos() {
 		return nil, nil
 	})
 
-	r, e := pymodule.Call("adder", "callback", "callme", 1, "2", 3.3)
-	fmt.Println("Result: ", r, e)
+	c := make(chan bool)
+
+	for i := 0; i < 100000; i++ {
+		// go func() {
+		r, e := pymodule.Call("adder", "callback", "callme", 1, "2", 3.3)
+		fmt.Println("Result: ", r, e)
+		// }()
+	}
+
+	fmt.Println("\nDone")
+	<-c
 }
 
 func main() {
