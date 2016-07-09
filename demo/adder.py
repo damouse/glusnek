@@ -32,3 +32,7 @@ def run(*a):
     print "PY: args: ", a, " goret: ", ret
 
     return json.dumps([threading.currentThread().ident] + list(a))
+
+# if __name__ == '__main__':
+#     s = "{\"a\": \"Returning from go!\"}"
+#     print json.loads(s)

@@ -31,52 +31,47 @@ inline PyObject *PYNONE() {Py_INCREF(Py_None); return Py_None;}
 // return the *PyObject pointer without violating the cgo rules
 extern char *_gosnake_invoke(PyObject *self, PyObject *args);
 
+// If the result is nil attempts to print the error message
+static void check_pyerr(void *result, char *location) {
+    if (result == NULL) {
+        fprintf(stderr, "Error occured at: %s\n", location);
+        PyErr_PrintEx(0);
+    }
+}
+
+static PyObject *callJson (char *s) {
+    PyObject *_module, *_stringio, *_args;
+
+    _module = PyImport_Import(PyString_FromString("json"));
+    _stringio = PyObject_GetAttr(_module, PyString_FromString("loads"));
+
+    _args = Py_BuildValue("(z)", s);
+
+    return PyObject_CallObject(_stringio, _args);
+}
+
+
 static PyObject* _gosnake_receive(PyObject *self, PyObject *args) {
-    PyObject *_module_name, *_module, *fn_name;
-    PyGILState_STATE _gstate;
-
     // route the call into Go
-    char *result;
-    PyObject *pyStringResult;
-    result = _gosnake_invoke(self, args);
-    pyStringResult = PyString_FromString(result);
-
-    // Initialize python GIL state. I think we don't have to do this?
-    // _gstate = PyGILState_Ensure();
+    char *result = _gosnake_invoke(self, args);
+    PyObject *pyStringResult = PyString_FromString(result);
 
     // import json
-    _module_name = PyString_FromString("json");
-    _module = PyImport_Import(_module_name);
+    PyObject *json = PyImport_Import(PyString_FromString("json"));
+    PyObject *loads = PyObject_GetAttr(json, PyString_FromString("loads"));
+    check_pyerr(json, "import json");
+    check_pyerr(loads, "import loads");
 
-    // import json.dumps
-    PyObject *_attr, *_result;
-    fn_name = PyString_FromString("loads");
-    _attr = PyObject_GetAttr(_module, fn_name);
-    _result = PyObject_CallObject(_attr, pyStringResult);
+    // Build args tuple
+    PyObject *tup = PyTuple_New(1);
+    PyTuple_SET_ITEM(tup, 0, pyStringResult);
+    check_pyerr(tup, "bulding tuple");
 
-    // Check for error message
-    if (PyErr_Occurred()) {
-        PyObject *ptype, *pvalue, *ptraceback;
-        PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+    // Make the call
+    PyObject *_result = PyObject_CallObject(loads, tup);
+    check_pyerr(_result, "calling json.loads");
 
-        char *pStrErrorMessage = PyString_AsString(pvalue);
-        fprintf(stdout, "gosnake: Could not parse return json: %s\n", pStrErrorMessage);
-
-        Py_DECREF(ptype);
-        Py_DECREF(pvalue);
-        Py_DECREF(ptraceback);
-    }
-
-    // Clean up
-    Py_DECREF(_module);
-    Py_DECREF(_module_name);
-    Py_DECREF(fn_name);
-    Py_DECREF(_attr);
-    Py_DECREF(pyStringResult);
-
-    // PyGILState_Release(_gstate);
-
-    // return _result;
+    return _result;
     return PYNONE();
 }
 
@@ -106,9 +101,9 @@ static void pyinit (int log) {
 import "C"
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
-	"unsafe"
 
 	"github.com/liamzdenek/go-pthreads"
 	"github.com/sbinet/go-python"
@@ -196,10 +191,13 @@ func threadConsume() {
 func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
 	fmt.Println("GO: invocation", self, args)
 
-	ret := "[Returning from go!]"
+	a := []interface{}{"hello"}
+	b, _ := json.Marshal(a)
+	ret := string(b)
 
 	cmode := C.CString(ret)
-	defer C.free(unsafe.Pointer(cmode))
+	fmt.Println("String as it leaves go: ", C.GoString(cmode))
+	// defer C.free(unsafe.Pointer(cmode))
 	return cmode
 }
 
