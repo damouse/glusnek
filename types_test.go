@@ -70,6 +70,14 @@ func TestListToGo(t *testing.T) {
 	assert.Equal(t, 12345, cast[1].(int))
 }
 
+func TestNoneToGo(t *testing.T) {
+	o := python.Py_None
+	c, e := togo(o)
+
+	assert.Nil(t, e)
+	assert.Equal(t, c, nil)
+}
+
 // None
 // Dictionaries
 
@@ -109,6 +117,13 @@ func TestLongToPy(t *testing.T) {
 	c, e := topy(float64(1234))
 	assert.Nil(t, e)
 	assert.True(t, python.PyLong_Check(c))
+}
+
+func TestNoneToPy(t *testing.T) {
+	c, e := topy(nil)
+
+	assert.Nil(t, e)
+	assert.True(t, isNone(c))
 }
 
 // None

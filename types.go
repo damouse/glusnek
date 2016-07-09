@@ -34,7 +34,9 @@ import (
 
 // Conversion to python types (go -> python)
 func topy(v interface{}) (ret *python.PyObject, err error) {
-	// return (*C.PyObject)(unsafe.Pointer(self))
+	if v == nil {
+		return python.Py_None, nil
+	}
 
 	switch v := v.(type) {
 	case bool:
@@ -101,6 +103,9 @@ func togo(o *python.PyObject) (interface{}, error) {
 		r, e := unpackList(o)
 		return r, e
 
+	} else if isNone(o) {
+		return nil, nil
+
 	} else {
 		return nil, fmt.Errorf("gosnake: Unknown type converting to go!")
 	}
@@ -135,4 +140,9 @@ func unpackList(tup *python.PyObject) ([]interface{}, error) {
 	}
 
 	return converted, nil
+}
+
+// Checks if the object is None
+func isNone(o *python.PyObject) bool {
+	return *o == *python.Py_None
 }
