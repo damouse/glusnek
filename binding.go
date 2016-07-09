@@ -24,6 +24,9 @@ type ThreadCallback func()
 
 var create_callback chan ThreadCallback
 
+// Because the invocation method is static we have to hold a global reference to these guys. Not ecstatic about that
+var allBindings []*Binding = []*Binding{}
+
 func init() {
 	C.initialize_python(C.int(0))
 	C.register_sig_handler()
@@ -43,13 +46,16 @@ type Binding struct {
 }
 
 func NewBinding() *Binding {
-	return &Binding{
+	b := &Binding{
 		lock:           &sync.Mutex{},
 		thread:         0,
 		threadCallback: make(chan ThreadCallback, 1),
 		imports:        map[string]*python.PyObject{},
 		exports:        map[string]*ExportedFunction{},
 	}
+
+	allBindings = append(allBindings, b)
+	return b
 }
 
 // Equivalent to "import name" in python
@@ -142,22 +148,72 @@ func (b *Binding) parseException() error {
 	return fmt.Errorf("Python operation failed")
 }
 
+// An invocation FROM python to go
+// TODO: throw errors back to python!
 //export pyInvocation
 func pyInvocation(self *C.PyObject, args *C.PyObject) *C.PyObject {
 	fmt.Println("GO: invocation", self, args)
+	transform := python.PyObject_FromVoidPtr(unsafe.Pointer(args))
 
-	// a := python.PyObject_FromVoidPtr(unsafe.Pointer(args))
-	// iter := python.PySeqIter_New(a)
+	var target string
+	var goArgs []interface{}
 
-	// converted := []interface{}{}
+	if unpacked, e := togo(transform); e != nil {
+		fmt.Println("GO: an error occured! ", e)
+	} else if arr, ok := unpacked.([]interface{}); !ok {
+		fmt.Println("GO: an error occured! ")
+	} else {
+		goArgs = arr
+	}
 
-	// for i := 0; i < python.PyTuple_Size(iter); i++ {
-	// 	p := python.PyTuple_GetItem(iter, i)
-	// 	s := python.PyString_AsString(p)
-	// 	converted = append(converted, s)
-	// }
+	if len(goArgs) < 1 {
+		fmt.Println("GO: not enough arguments to gocall")
+	} else if t, ok := goArgs[0].(string); !ok {
+		fmt.Println("GO: method name wasnt a string")
+	} else {
+		target = t
+	}
 
-	// fmt.Printf("Go code called!: %s\n", converted)
+	if len(goArgs) != 2 {
+		goArgs = nil
+	} else if f, ok := goArgs[1].([]interface{}); !ok {
+		fmt.Println("GO: not passed a list as method arguments")
+	} else {
+		goArgs = f
+	}
+
+	// Search for exported method
+	var fn ExportedFunction
+	for _, binding := range allBindings {
+		for name, f := range binding.exports {
+			if name == target {
+				fn = *f
+			}
+		}
+	}
+
+	if fn == nil {
+		fmt.Println("GO: no function exported as ", target)
+	}
+
+	results, err := fn(goArgs, nil)
+
+	if err != nil {
+		fmt.Println("GO: exported function erred. Name:", target, err)
+	}
+
+	// cstr := C.CString("hi from go\n")
+	// defer C.free(unsafe.Pointer(cstr))
+	return C.PyNone()
+
+	if ret, err := topy(results); err != nil {
+		fmt.Println("GO: could not convert types back to python. Name:", target, err)
+	} else {
+		// This pointer doesnt work... but is it coming from the slice itself, or internal pointers?
+		unptr := (*C.PyObject)(unsafe.Pointer(&ret))
+		defer C.free(unsafe.Pointer(unptr))
+		return unptr
+	}
 
 	return C.PyNone()
 }
@@ -195,7 +251,6 @@ func (t Thread) Running() bool {
 	return int(C.pthread_kill(t.c(), 0)) != 3
 }
 
-// signals the thread in question to terminate
 func (t Thread) Kill() {
 	C.pthread_kill(t.c(), C.SIGSEGV)
 }

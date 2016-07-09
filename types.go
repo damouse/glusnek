@@ -59,28 +59,17 @@ func topy(v interface{}) (ret *python.PyObject, err error) {
 	case string:
 		ret = python.PyString_FromString(v)
 
+	case []interface{}:
+		ret, err = packTuple(v)
+
 	case *python.PyObject:
 		ret = v
 
 	default:
-		err = fmt.Errorf("gosnake: unknown type (%v) converting to python", v)
+		err = fmt.Errorf("gosnake: go -> py unknown type (%v)", v)
 	}
 
 	return
-}
-
-func packTuple(args []interface{}) (*python.PyObject, error) {
-	a := python.PyTuple_New(len(args))
-
-	for i, arg := range args {
-		if converted, e := topy(arg); e != nil {
-			return nil, e
-		} else {
-			python.PyTuple_SET_ITEM(a, i, converted)
-		}
-	}
-
-	return a, nil
 }
 
 // Conversion to go types (python -> go)
@@ -107,8 +96,22 @@ func togo(o *python.PyObject) (interface{}, error) {
 		return nil, nil
 
 	} else {
-		return nil, fmt.Errorf("gosnake: Unknown type converting to go!")
+		return nil, fmt.Errorf("gosnake: py -> go unknown typ")
 	}
+}
+
+func packTuple(args []interface{}) (*python.PyObject, error) {
+	a := python.PyTuple_New(len(args))
+
+	for i, arg := range args {
+		if converted, e := topy(arg); e != nil {
+			return nil, e
+		} else {
+			python.PyTuple_SET_ITEM(a, i, converted)
+		}
+	}
+
+	return a, nil
 }
 
 // Unpack tupes and lists
