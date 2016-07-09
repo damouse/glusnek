@@ -10,18 +10,31 @@ package gosnake
 #include <unistd.h>
 #include <stdio.h>
 
-static void caught_sig(int sig);
+static void c_call_python() {
+    PyObject *_module_name, *_module;
+    PyGILState_STATE _gstate;
 
-static void caught_sig(int sig) {
-    PyErr_Print();
-    fprintf(stdout, "gosnake: SIGSEGV on %d\n", sig);
+    // Initialize python GIL state
+    _gstate = PyGILState_Ensure();
 
-    signal(SIGSEGV, caught_sig);
-    pthread_exit(NULL);
-}
+    // Now execute some python code (call python functions)
+    _module_name = PyString_FromString("adder");
+    _module = PyImport_Import(_module_name);
 
-static void register_sig_handler() {
-    signal(SIGSEGV, caught_sig);
+    // Call a method of the class with no parameters
+    PyObject *_attr, *_result;
+    _attr = PyObject_GetAttr(_module, PyString_FromString("run"));
+    _result = PyObject_CallObject(_attr, NULL);
+
+    // Clean up
+    Py_DECREF(_module);
+    Py_DECREF(_module_name);
+    Py_DECREF(_attr);
+    Py_DECREF(_result);
+
+    PyGILState_Release(_gstate);
+
+    // return _result;
 }
 */
 import "C"
@@ -34,79 +47,71 @@ import (
 	"github.com/sbinet/go-python"
 )
 
-var module *python.PyObject
-var fn *python.PyObject
+// The pthreads live in a pool. They should be sent messages through the opChan channel
+var POOL_SIZE int = 5
+var pool []*pthread.Thread
+var opChan chan func()
 
 func Initialize() {
-	gil := python.PyGILState_Ensure()
-	module = python.PyImport_ImportModule("adder")
-	fn = module.GetAttrString("run")
-	python.PyGILState_Release(gil)
-	checkPyErr()
+	opChan = make(chan func())
+	pool = make([]*pthread.Thread, POOL_SIZE)
+
+	for i := 0; i < POOL_SIZE; i++ {
+		t := pthread.Create(threadConsume)
+		pool = append(pool, &t)
+	}
+}
+
+// Consume an operation from the queue
+func threadConsume() {
+	for {
+		<-opChan
+		// C.c_call_python()
+		PyCall()
+	}
 }
 
 // We can likely pool the pthreads, but that sounds like a problem for future mickey
 func PyCall() string {
-	done := make(chan string)
+	gil := python.PyGILState_Ensure()
 
-	t := pthread.Create(func() {
-		gil := python.PyGILState_Ensure()
+	m := python.PyImport_ImportModule("adder")
+	fn := m.GetAttrString("run")
 
-		// m := python.PyImport_ImportModule("adder")
-		// m.IncRef()
-		// fn := module.GetAttrString("run")
-		// fn.IncRef()
+	m.IncRef()
+	fn.IncRef()
 
-		// Pack the arguments
-		// args := python.PyTuple_New(2)
-		// python.PyTuple_SET_ITEM(args, 0, python.PyString_FromString("Hello!"))
-		// python.PyTuple_SET_ITEM(args, 1, python.PyInt_FromLong(1234))
+	// Pack the arguments
+	// args := python.PyTuple_New(2)
+	// python.PyTuple_SET_ITEM(args, 0, python.PyString_FromString("Hello!"))
+	// python.PyTuple_SET_ITEM(args, 1, python.PyInt_FromLong(1234))
 
-		args := python.PyTuple_New(0)
-		args.IncRef()
+	args := python.PyTuple_New(0)
+	args.IncRef()
 
-		ret := fn.CallObject(args)
+	ret := fn.CallObject(args)
 
-		defer ret.DecRef()
-		defer args.DecRef()
+	// Release everything
+	ret.DecRef()
+	args.DecRef()
+	m.DecRef()
+	fn.DecRef()
 
-		checkPyErr()
-		python.PyGILState_Release(gil)
-		checkPyErr()
+	python.PyGILState_Release(gil)
 
-		done <- "Done"
-
-		// done <- python.PyString_AsString(ret)
-	})
-
-	defer t.Kill()
-	defer close(done)
-	return <-done
-}
-
-func checkPyErr() {
-	if python.PyErr_CheckSignals() {
-		python.PyErr_PrintEx(false)
-	}
+	return "Done"
 }
 
 func BetterTest() {
-	n := 10
+	n := 1000
 	wg := sync.WaitGroup{}
 	wg.Add(n)
 
 	for i := 0; i < n; i++ {
 		go func(gid int) {
 			for j := 0; j < 1000; j++ {
-				PyCall()
+				opChan <- func() {}
 				fmt.Printf("gorutine: %d iteration: %d\n", gid, j)
-
-				// var retjson []interface{}
-				// if _err := json.Unmarshal([]byte(rs), &retjson); _err != nil {
-				// 	panic(fmt.Errorf("got invalid result from python function, `%v`\n", rs))
-				// }
-
-				// fmt.Printf("gorutine: %d iteration: %d pid: %f\n", gid, j, retjson[0])
 			}
 
 			wg.Done()
@@ -116,3 +121,36 @@ func BetterTest() {
 	wg.Wait()
 	fmt.Println("\nInternal Done")
 }
+
+// func checkPyErr() {
+// 	if python.PyErr_CheckSignals() {
+// 		python.PyErr_PrintEx(false)
+// 	}
+// }
+
+// func BetterTest() {
+// 	n := 10
+// 	wg := sync.WaitGroup{}
+// 	wg.Add(n)
+
+// 	for i := 0; i < n; i++ {
+// 		go func(gid int) {
+// 			for j := 0; j < 1000; j++ {
+// 				PyCall()
+// 				fmt.Printf("gorutine: %d iteration: %d\n", gid, j)
+
+// 				// var retjson []interface{}
+// 				// if _err := json.Unmarshal([]byte(rs), &retjson); _err != nil {
+// 				// 	panic(fmt.Errorf("got invalid result from python function, `%v`\n", rs))
+// 				// }
+
+// 				// fmt.Printf("gorutine: %d iteration: %d pid: %f\n", gid, j, retjson[0])
+// 			}
+
+// 			wg.Done()
+// 		}(i)
+// 	}
+
+// 	wg.Wait()
+// 	fmt.Println("\nInternal Done")
+// }
