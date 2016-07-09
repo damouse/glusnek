@@ -13,7 +13,7 @@ inline PyObject *PyNone() {Py_INCREF(Py_None); return Py_None;}
 extern PyObject* pyInvocation(PyObject *self, PyObject *args);
 
 // Part of the threading implmentation
-extern void createThreadCallback();
+extern void createThreadCallbacke();
 static void sig_func(int sig);
 
 
@@ -42,7 +42,7 @@ static void initialize_python (int log) {
 
 // Threading implementation
 static void createThread(pthread_t* pid) {
-    pthread_create(pid, NULL, (void*)createThreadCallback, NULL);
+    pthread_create(pid, NULL, (void*)createThreadCallbacke, NULL);
 }
 
 static void sig_func(int sig) {

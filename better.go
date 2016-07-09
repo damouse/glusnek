@@ -40,9 +40,6 @@ static PyObject* thread_callback() {
 static void createThreade(pthread_t* pid) {
     pthread_create(pid, NULL, (void*)createThreadCB, pid);
 }
-
-
-
 */
 import "C"
 
@@ -50,6 +47,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
+
+	"github.com/liamzdenek/go-pthreads"
 )
 
 type ThreadCB func(a *C.PyObject)
@@ -73,24 +72,37 @@ func createThreadCB(pid *C.pthread_t) {
 }
 
 func create_thread(cb ThreadCB) {
-	_pid := new(C.pthread_t)
+	// _pid := new(C.pthread_t)
 
-	cbLock.Lock()
-	callbacks[_pid] = cb
-	cbLock.Unlock()
+	// cbLock.Lock()
+	// callbacks[_pid] = cb
+	// cbLock.Unlock()
 
-	C.createThreade(_pid)
+	// C.createThreade(_pid)
+	done := make(chan error)
+
+	t := pthread.Create(func() {
+		result := C.thread_callback()
+		cb(result)
+		done <- nil
+	})
+
+	<-done
+	t.Kill()
 }
 
 func BetterTest() {
 	for i := 0; i < 500; i++ {
 		go create_thread(func(result *C.PyObject) {
-			_result_string := C.GoString(C.PyString_AsString(result))
-			fmt.Printf("< got result string: %v (%T)\n", _result_string, _result_string)
+			for i := 0; i < 500; i++ {
 
-			var _parsed []interface{}
-			if _err := json.Unmarshal([]byte(_result_string), &_parsed); _err != nil {
-				panic(fmt.Errorf("got invalid result from python function, `%v`\n", _result_string))
+				_result_string := C.GoString(C.PyString_AsString(result))
+				fmt.Printf("< got result string: %v (%T)\n", _result_string, _result_string)
+
+				var _parsed []interface{}
+				if _err := json.Unmarshal([]byte(_result_string), &_parsed); _err != nil {
+					panic(fmt.Errorf("got invalid result from python function, `%v`\n", _result_string))
+				}
 			}
 
 		})

@@ -248,8 +248,8 @@ func pyInvocation(self *C.PyObject, args *C.PyObject) *C.PyObject {
 // threading
 //
 
-//export createThreadCallback
-func createThreadCallback() {
+//export createThreadCallbacke
+func createThreadCallbacke() {
 	C.register_sig_handler()
 	C.pthread_setcanceltype(C.PTHREAD_CANCEL_ASYNCHRONOUS, nil)
 	(<-create_callback)()
