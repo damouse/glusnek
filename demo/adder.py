@@ -27,6 +27,7 @@ def callback(name, *args, **kwargs):
 
 
 def run(*a):
+    print "Have args: ", a
     return json.dumps(
         [
             threading.currentThread().ident,

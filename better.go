@@ -10,8 +10,6 @@ package gosnake
 #include <unistd.h>
 #include <stdio.h>
 
-extern void createThreadCB();
-
 static PyObject* thread_callback() {
     PyObject *_module_name, *_module;
     PyGILState_STATE _gstate;
@@ -36,54 +34,43 @@ static PyObject* thread_callback() {
     PyGILState_Release(_gstate);
     return _result;
 }
-
-static void createThreade(pthread_t* pid) {
-    pthread_create(pid, NULL, (void*)createThreadCB, pid);
-}
 */
 import "C"
 
 import (
 	"encoding/json"
 	"fmt"
-	"sync"
+	"unsafe"
 
 	"github.com/liamzdenek/go-pthreads"
+	"github.com/sbinet/go-python"
 )
 
-type ThreadCB func(a *C.PyObject)
-
-var cbLock *sync.Mutex = &sync.Mutex{}
-var callbacks map[*C.pthread_t]ThreadCB = map[*C.pthread_t]ThreadCB{}
-
-//export createThreadCB
-func createThreadCB(pid *C.pthread_t) {
-	cbLock.Lock()
-
-	if _cb, _ok := callbacks[pid]; !_ok {
-		panic(fmt.Errorf("failed to found thread callback for `%v`", pid))
-	} else {
-		delete(callbacks, pid)
-		cbLock.Unlock()
-
-		_result := C.thread_callback()
-		_cb(_result)
-	}
-}
-
-func create_thread(cb ThreadCB) {
-	// _pid := new(C.pthread_t)
-
-	// cbLock.Lock()
-	// callbacks[_pid] = cb
-	// cbLock.Unlock()
+func create_thread(cb func(a *C.PyObject)) {
 
 	// C.createThreade(_pid)
 	done := make(chan error)
 
 	t := pthread.Create(func() {
-		result := C.thread_callback()
-		cb(result)
+		// Lets try it with the gopython code...
+		gil := C.PyGILState_Ensure()
+		defer C.PyGILState_Release(gil)
+
+		m := python.PyImport_ImportModule("adder")
+		fn := m.GetAttrString("run")
+
+		// Pack the arguments
+		args := python.PyTuple_New(2)
+		python.PyTuple_SET_ITEM(args, 0, python.PyString_FromString("Hello!"))
+		python.PyTuple_SET_ITEM(args, 1, python.PyInt_FromLong(1234))
+		ret := fn.CallObject(args)
+
+		resultAsPyobj := (*C.PyObject)(unsafe.Pointer(ret))
+		cb(resultAsPyobj)
+
+		// result := C.thread_callback()
+		// cb(result)
+
 		done <- nil
 	})
 
