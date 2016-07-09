@@ -32,20 +32,23 @@ inline PyObject *PYNONE() {Py_INCREF(Py_None); return Py_None;}
 extern char *_gosnake_invoke(PyObject *self, PyObject *args);
 
 // If the result is nil attempts to print the error message
-static void check_pyerr(void *result, char *location) {
-    if (result == NULL) {
-        fprintf(stderr, "Error occured at: %s\n", location);
+static void check_pyerr() {
+    PyObject *err = PyErr_Occurred();
+
+    if (err != NULL) {
         PyErr_PrintEx(0);
+        Py_DECREF(err);
     }
 }
 
 // Called directly from Python. Invokes the go function _gosnake_invoke,
 // runs the results through json.loads, then returns it to python
 static PyObject* _gosnake_receive(PyObject *self, PyObject *args) {
+    // PyGILState_STATE gil = PyGILState_Ensure();
+
     // route the call into Go
     char *result = _gosnake_invoke(self, args);
     PyObject *pyStringResult = PyString_FromString(result);
-    check_pyerr(pyStringResult, "converting go string result into python string");
 
     // free the string
     free(result);
@@ -57,18 +60,18 @@ static PyObject* _gosnake_receive(PyObject *self, PyObject *args) {
     // Build args tuple
     PyObject *tup = PyTuple_New(1);
     PyTuple_SET_ITEM(tup, 0, pyStringResult);
-    check_pyerr(tup, "bulding tuple");
 
     // Make the call
     PyObject *_result = PyObject_CallObject(loads, tup);
-    check_pyerr(_result, "calling json.loads");
 
     // Cleanup
     Py_DECREF(json);
     Py_DECREF(loads);
     Py_DECREF(tup);
-    Py_DECREF(pyStringResult);
 
+    // Finish up and return
+    check_pyerr();
+    // PyGILState_Release(gil);
     return _result;
 }
 
@@ -184,8 +187,6 @@ func threadConsume() {
 // TODO: throw errors back to python!
 //export _gosnake_invoke
 func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
-	fmt.Println("GO: invocation", self, args)
-
 	a := []interface{}{"hello"}
 	b, _ := json.Marshal(a)
 	ret := string(b)
