@@ -124,8 +124,8 @@ func (b *Binding) Call(module string, function string, args ...interface{}) (int
 // TODO
 //      Raise exceptions in python
 //      Check if name is already taken
-func (b *Binding) Export(name string, fn ExportedFunction) {
-	b.exports[name] = &fn
+func (b *Binding) Export(module string, meth string, fn ExportedFunction) {
+	b.exports[meth] = &fn
 }
 
 // Process a python exception: return the reason, the stack trace, and clear the exception flag

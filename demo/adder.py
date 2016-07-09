@@ -14,4 +14,7 @@ def birthday(*args):
 def callback(name, *args, **kwargs):
     print "PY: ", name, args, kwargs
 
-    gosnake.gocall(name, args)
+    # gosnake.gocall(name, args)
+
+    func = eval("gosnake." + name)
+    func(args, kwargs)
