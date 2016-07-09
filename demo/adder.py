@@ -4,6 +4,10 @@ Demo python script integrating with gosnake
 
 import gosnake
 
+import json
+import threading
+import datetime
+
 
 def birthday(*args):
     # gosnake.gocall()
@@ -20,3 +24,12 @@ def callback(name, *args, **kwargs):
 
     # func = eval("gosnake." + name)
     # func(args, kwargs)
+
+
+def run(*a):
+    return json.dumps(
+        [
+            threading.currentThread().ident,
+            datetime.datetime.now().isoformat(),
+        ] + list(a),
+    )

@@ -11,7 +11,10 @@ import (
 )
 
 func roundtwo() {
+	c := make(chan bool)
 	gosnake.BetterTest()
+	mt.Println("\nDone")
+	<-c
 }
 
 func demos() {

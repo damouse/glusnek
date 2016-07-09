@@ -20,7 +20,7 @@ static PyObject* thread_callback() {
     _gstate = PyGILState_Ensure();
 
     // Now execute some python code (call python functions)
-    _module_name = PyString_FromString("json_dump");
+    _module_name = PyString_FromString("adder");
     _module = PyImport_Import(_module_name);
 
     // Call a method of the class with no parameters
@@ -41,18 +41,7 @@ static void createThreade(pthread_t* pid) {
     pthread_create(pid, NULL, (void*)createThreadCB, pid);
 }
 
-static void initialize_pythone () {
-    if (Py_IsInitialized() == 0) {
-        Py_Initialize();
-    }
 
-    // make sure the GIL is correctly initialized
-    if (PyEval_ThreadsInitialized() == 0) {
-        PyEval_InitThreads();
-    }
-
-    PyEval_ReleaseThread(PyGILState_GetThisThreadState());
-}
 
 */
 import "C"
@@ -63,14 +52,10 @@ import (
 	"sync"
 )
 
-var cbLock *sync.Mutex = &sync.Mutex{}
-var callbacks map[*C.pthread_t]ThreadCB = map[*C.pthread_t]ThreadCB{}
-
 type ThreadCB func(a *C.PyObject)
 
-func init() {
-	C.initialize_pythone()
-}
+var cbLock *sync.Mutex = &sync.Mutex{}
+var callbacks map[*C.pthread_t]ThreadCB = map[*C.pthread_t]ThreadCB{}
 
 //export createThreadCB
 func createThreadCB(pid *C.pthread_t) {
@@ -98,13 +83,8 @@ func create_thread(cb ThreadCB) {
 }
 
 func BetterTest() {
-	var _wg sync.WaitGroup
-	// _wg.Add(n)
-
 	for i := 0; i < 500; i++ {
 		go create_thread(func(result *C.PyObject) {
-			defer _wg.Done()
-
 			_result_string := C.GoString(C.PyString_AsString(result))
 			fmt.Printf("< got result string: %v (%T)\n", _result_string, _result_string)
 
@@ -115,5 +95,4 @@ func BetterTest() {
 
 		})
 	}
-	_wg.Wait()
 }
