@@ -56,6 +56,20 @@ func TestTupleToGo(t *testing.T) {
 	assert.Equal(t, 12345, cast[1].(int))
 }
 
+func TestListToGo(t *testing.T) {
+	tup := python.PyList_New(2)
+
+	python.PyList_SetItem(tup, 0, python.PyString_FromString("asdf"))
+	python.PyList_SetItem(tup, 1, python.PyInt_FromLong(12345))
+
+	c, e := togo(tup)
+
+	assert.Nil(t, e)
+	cast := c.([]interface{})
+	assert.Equal(t, "asdf", cast[0].(string))
+	assert.Equal(t, 12345, cast[1].(int))
+}
+
 // None
 // Arrays
 // Dictionaries

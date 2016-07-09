@@ -54,6 +54,7 @@ static void createThread(pthread_t* pid) {
 }
 
 static void sig_func(int sig) {
+    PyErr_Print();
     fprintf(stdout, "gosnake: handling exit signal\n");
 
     // PyObject *ptype, *pvalue, *ptraceback;

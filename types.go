@@ -95,20 +95,44 @@ func togo(o *python.PyObject) (interface{}, error) {
 		return python.PyLong_AsDouble(o), nil
 
 	} else if python.PyTuple_Check(o) {
-		size := python.PyTuple_Size(o)
-		converted := []interface{}{}
+		return unpackTuple(o)
 
-		for i := 0; i < size; i++ {
-			if c, e := togo(python.PyTuple_GetItem(o, i)); e != nil {
-				return nil, e
-			} else {
-				converted = append(converted, c)
-			}
-		}
-
-		return converted, nil
+	} else if python.PyList_Check(o) {
+		r, e := unpackList(o)
+		return r, e
 
 	} else {
 		return nil, fmt.Errorf("gosnake: Unknown type converting to go!")
 	}
+}
+
+// Unpack tupes and lists
+func unpackTuple(tup *python.PyObject) ([]interface{}, error) {
+	size := python.PyTuple_Size(tup)
+	converted := []interface{}{}
+
+	for i := 0; i < size; i++ {
+		if c, e := togo(python.PyTuple_GetItem(tup, i)); e != nil {
+			return nil, e
+		} else {
+			converted = append(converted, c)
+		}
+	}
+
+	return converted, nil
+}
+
+func unpackList(tup *python.PyObject) ([]interface{}, error) {
+	size := python.PyList_Size(tup)
+	converted := []interface{}{}
+
+	for i := 0; i < size; i++ {
+		if c, e := togo(python.PyList_GetItem(tup, i)); e != nil {
+			return nil, e
+		} else {
+			converted = append(converted, c)
+		}
+	}
+
+	return converted, nil
 }

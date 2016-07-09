@@ -124,7 +124,7 @@ func (b *Binding) Call(module string, function string, args ...interface{}) (int
 // TODO
 //      Raise exceptions in python
 //      Check if name is already taken
-func (b *Binding) Export(module string, meth string, fn ExportedFunction) {
+func (b *Binding) Export(meth string, fn ExportedFunction) {
 	b.exports[meth] = &fn
 }
 
