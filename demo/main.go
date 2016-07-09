@@ -20,10 +20,22 @@ func demos() {
 		return nil, nil
 	})
 
-	r, e := pymodule.Call("adder", "callback", "callme", 1, "2", 3.3)
-	fmt.Println("Result: ", r, e)
+	c := make(chan bool)
+
+	for i := 0; i < 400; i++ {
+
+		go func() {
+			pymodule.Call("adder", "callback", "callme", 1, "2", 3.3)
+			// fmt.Println("Result: ", r, e)
+		}()
+	}
+
+	<-c
 }
 
 func main() {
 	demos()
 }
+
+// fatal error: unexpected signal during runtime execution
+// [signal 0x7 code=0x80 addr=0x0 pc=0x7fcdf668fcda]
