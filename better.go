@@ -3,39 +3,6 @@ package gosnake
 /*
 #cgo pkg-config: python-2.7
 #include "Python.h"
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <signal.h>
-#include <unistd.h>
-#include <stdio.h>
-
-static void c_call_python() {
-    PyObject *_module_name, *_module;
-    PyGILState_STATE _gstate;
-
-    // Initialize python GIL state
-    _gstate = PyGILState_Ensure();
-
-    // Now execute some python code (call python functions)
-    _module_name = PyString_FromString("adder");
-    _module = PyImport_Import(_module_name);
-
-    // Call a method of the class with no parameters
-    PyObject *_attr, *_result;
-    _attr = PyObject_GetAttr(_module, PyString_FromString("run"));
-    _result = PyObject_CallObject(_attr, NULL);
-
-    // Clean up
-    Py_DECREF(_module);
-    Py_DECREF(_module_name);
-    Py_DECREF(_attr);
-    Py_DECREF(_result);
-
-    PyGILState_Release(_gstate);
-
-    // return _result;
-}
 */
 import "C"
 
