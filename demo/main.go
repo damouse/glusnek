@@ -10,37 +10,19 @@ import (
 	"github.com/damouse/gosnake"
 )
 
-// Simple starter script to kick off the go core
-
-func sandbox() {
-	fmt.Println("Hello!")
-
-	// So C conversions to and from will work... but do we want to abandon go-python?
-	a := 1
-	b := C.long(a)
-	c := C.PyLong_FromLong(b)
-	d := C.PyLong_AsLong(c)
-	e := int(d)
-
-	fmt.Printf("%v %v %v %v %v", a, b, c, d, e)
-}
-
 func demos() {
-	// Start the server
-	end := make(chan bool)
+	pymodule := gosnake.NewBinding()
+	pymodule.Import("adder")
 
-	// os.Args
+	pymodule.Export("callme", func(args []interface{}, kwargs map[string]interface{}) ([]interface{}, error) {
+		fmt.Println("Go function called!", args, kwargs)
+		return args, nil
+	})
 
-	for i := 0; i < 1; i++ {
-		go gosnake.Create_thread(i)
-	}
-
-	<-end
-
-	// Run forever
+	r, e := pymodule.Call("adder", "callback", "callme", 1, "2", 3.3)
+	fmt.Println("Result: ", r, e)
 }
 
 func main() {
-	// sandbox()
 	demos()
 }

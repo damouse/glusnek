@@ -61,10 +61,24 @@ func topy(v interface{}) (ret *python.PyObject, err error) {
 		ret = v
 
 	default:
-		err = fmt.Errorf("python: unknown type (%v)", v)
+		err = fmt.Errorf("gosnake: unknown type (%v) converting to python", v)
 	}
 
 	return
+}
+
+func packTuple(args []interface{}) (*python.PyObject, error) {
+	a := python.PyTuple_New(len(args))
+
+	for i, arg := range args {
+		if converted, e := topy(arg); e != nil {
+			return nil, e
+		} else {
+			python.PyTuple_SET_ITEM(a, i, converted)
+		}
+	}
+
+	return a, nil
 }
 
 // Conversion to go types (python -> go)
@@ -95,6 +109,6 @@ func togo(o *python.PyObject) (interface{}, error) {
 		return converted, nil
 
 	} else {
-		return nil, fmt.Errorf("Unknown type converting to go!")
+		return nil, fmt.Errorf("gosnake: Unknown type converting to go!")
 	}
 }

@@ -88,6 +88,8 @@ func init() {
 	create_callback = make(chan ThreadCallback, 1)
 }
 
+type ExportedFunction func([]interface{}, map[string]interface{}) ([]interface{}, error)
+
 // Wraps all state and management information for a binding
 type Binding struct {
 	lock *sync.Mutex
@@ -96,7 +98,8 @@ type Binding struct {
 
 	threadCallback chan ThreadCallback
 
-	modules map[string]*python.PyObject
+	imports map[string]*python.PyObject
+	exports map[string]*ExportedFunction
 }
 
 func NewBinding() *Binding {
@@ -104,7 +107,8 @@ func NewBinding() *Binding {
 		lock:           &sync.Mutex{},
 		thread:         0,
 		threadCallback: make(chan ThreadCallback, 1),
-		modules:        map[string]*python.PyObject{},
+		imports:        map[string]*python.PyObject{},
+		exports:        map[string]*ExportedFunction{},
 	}
 }
 
@@ -123,7 +127,7 @@ func (b *Binding) Import(name string) error {
 		if m := python.PyImport_ImportModuleNoBlock(name); m == nil {
 			done <- b.parseException()
 		} else {
-			b.modules[name] = m
+			b.imports[name] = m
 			done <- nil
 		}
 	})
@@ -135,13 +139,15 @@ func (b *Binding) Import(name string) error {
 // Call a python function on passed module. Fails if Binding.Import(moduleName) has not already succeeded
 // If the call raises an exception in python its passed along as a go error
 func (b *Binding) Call(module string, function string, args ...interface{}) (interface{}, error) {
-	if m, ok := b.modules[module]; !ok {
+
+	if m, ok := b.imports[module]; !ok {
 		return nil, fmt.Errorf("Cant call python function, module %s has not been imported. Did you call Import(moduleName)?", module)
+
 	} else if fn := m.GetAttrString(function); m == fn {
 		return nil, b.parseException()
+
 	} else {
 
-		// Start lockrun inline
 		b.lock.Lock()
 		defer b.lock.Unlock()
 
@@ -154,27 +160,18 @@ func (b *Binding) Call(module string, function string, args ...interface{}) (int
 			gil := C.PyGILState_Ensure()
 			defer C.PyGILState_Release(gil)
 
-			// TODO: deserialization
-			a := python.PyTuple_New(2)
-			python.PyTuple_SET_ITEM(a, 0, python.PyString_FromString(args[0].(string)))
-			python.PyTuple_SET_ITEM(a, 1, python.PyInt_FromLong(args[1].(int)))
+			if tup, e := packTuple(args); e != nil {
+				errChan <- e
 
-			// Call to python
-			ret := fn.CallObject(a)
-
-			// Python threw an exception! Return an error here to the go caller?
-			if ret == nil {
+			} else if ret := fn.CallObject(tup); ret == nil {
 				python.PyErr_PrintEx(false)
 				errChan <- b.parseException()
-			} else {
-				fmt.Println("GO: python call completed, ", ret)
 
-				if cast, e := togo(ret); e != nil {
-					errChan <- e
-				} else {
-					fmt.Println("GO: python call completed, ", cast)
-					resultChan <- cast
-				}
+			} else if cast, e := togo(ret); e != nil {
+				errChan <- e
+
+			} else {
+				resultChan <- cast
 			}
 		})
 
@@ -190,9 +187,11 @@ func (b *Binding) Call(module string, function string, args ...interface{}) (int
 }
 
 // Make a go method that takes a slice and a map callable from python
-// TODO: raise exceptions in python
-func (b *Binding) Export(fn func([]interface{}, map[string]interface{}) ([]interface{}, error)) {
-
+// TODO
+//      Raise exceptions in python
+//      Check if name is already taken
+func (b *Binding) Export(name string, fn ExportedFunction) {
+	b.exports[name] = &fn
 }
 
 // Process a python exception: return the reason, the stack trace, and clear the exception flag
