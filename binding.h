@@ -17,15 +17,7 @@ extern void createThreadCallback();
 static void sig_func(int sig);
 
 
-static PyObject* Foo_doSomething(PyObject *self, PyObject *args){
-    printf("DoSomething called!\n");
-    Py_INCREF(Py_None);
-    return Py_None;
-}
-
-
 static PyMethodDef ModuleMethods[] = {
-    {"summat", Foo_doSomething, METH_VARARGS, "doc string"},
     {"gocall", pyInvocation, METH_VARARGS, "doc string"},
     {NULL},
 };

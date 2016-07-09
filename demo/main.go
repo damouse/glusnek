@@ -10,6 +10,10 @@ import (
 	"github.com/damouse/gosnake"
 )
 
+func roundtwo() {
+	gosnake.BetterTest()
+}
+
 func demos() {
 	pymodule := gosnake.NewBinding()
 	pymodule.Import("adder")
@@ -21,20 +25,20 @@ func demos() {
 	})
 
 	c := make(chan bool)
-
-	for i := 0; i < 400; i++ {
-
-		go func() {
-			pymodule.Call("adder", "callback", "callme", 1, "2", 3.3)
-			// fmt.Println("Result: ", r, e)
-		}()
+	for i := 0; i < 100000; i++ {
+		// go func() {
+		r, e := pymodule.Call("adder", "callback", "callme", 1, "2", 3.3)
+		fmt.Println("Result: ", r, e)
+		// }()
 	}
 
+	fmt.Println("\nDone")
 	<-c
 }
 
 func main() {
-	demos()
+	// demos()
+	roundtwo()
 }
 
 // fatal error: unexpected signal during runtime execution
