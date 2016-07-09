@@ -30,7 +30,7 @@ var bindingsLock *sync.Mutex = &sync.Mutex{}
 var allBindings []*Binding = []*Binding{}
 
 func init() {
-	C.initialize_python(C.int(0))
+	// C.initialize_python(C.int(0))
 	C.register_sig_handler()
 	create_callback = make(chan ThreadCallback, 1)
 }

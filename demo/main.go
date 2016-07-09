@@ -12,7 +12,7 @@ import (
 
 func roundtwo() {
 	gosnake.Initialize()
-	gosnake.BetterTest()
+	gosnake.BetterTest(1, 1)
 }
 
 func demos() {
