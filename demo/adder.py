@@ -27,12 +27,12 @@ def callback(name, *args, **kwargs):
     # func = eval("gosnake." + name)
     # func(args, kwargs)
 
+
 def run(*a):
     global counter
     counter += 1
 
-    # print "PY: run: ", a
-    ret = gosnake.gocall("Hello!")
-    print "PY: args: ", a, " goret: ", ret
+    # ret = gosnake.gocall("Hello!")
+    # print "PY: args: ", a, " goret: ", ret
 
-    return json.dumps([threading.currentThread().ident] + list(a))
+    return json.dumps([threading.currentThread().ident, counter] + list(a))
