@@ -71,7 +71,6 @@ func TestListToGo(t *testing.T) {
 }
 
 // None
-// Arrays
 // Dictionaries
 
 //

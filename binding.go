@@ -15,14 +15,20 @@ import (
 	"github.com/sbinet/go-python"
 )
 
-// Package initialization
+type ExportedFunction func([]interface{}, map[string]interface{}) ([]interface{}, error)
+
+var lock sync.Mutex
+
+type Thread uintptr
+type ThreadCallback func()
+
+var create_callback chan ThreadCallback
+
 func init() {
 	C.initialize_python(C.int(0))
 	C.register_sig_handler()
 	create_callback = make(chan ThreadCallback, 1)
 }
-
-type ExportedFunction func([]interface{}, map[string]interface{}) ([]interface{}, error)
 
 // Wraps all state and management information for a binding
 type Binding struct {
@@ -136,16 +142,9 @@ func (b *Binding) parseException() error {
 	return fmt.Errorf("Python operation failed")
 }
 
-var lock sync.Mutex
-
-type Thread uintptr
-type ThreadCallback func()
-
-var create_callback chan ThreadCallback
-
 //export pyInvocation
 func pyInvocation(self *C.PyObject, args *C.PyObject) *C.PyObject {
-	fmt.Println("GO: invocation", args)
+	fmt.Println("GO: invocation", self, args)
 
 	// a := python.PyObject_FromVoidPtr(unsafe.Pointer(args))
 	// iter := python.PySeqIter_New(a)
@@ -161,50 +160,6 @@ func pyInvocation(self *C.PyObject, args *C.PyObject) *C.PyObject {
 	// fmt.Printf("Go code called!: %s\n", converted)
 
 	return C.PyNone()
-}
-
-// An example of publically exposing a method to python
-//export port
-func port(self *C.PyObject, args *C.PyObject) *C.PyObject {
-	fmt.Println("GO: public exported called")
-	return nil
-}
-
-func testFunctionTypes(name string, age int) {
-	_module := python.PyImport_ImportModuleNoBlock("adder")
-	attr := _module.GetAttrString("birthday")
-
-	a := python.PyTuple_New(2)
-	python.PyTuple_SET_ITEM(a, 0, python.PyString_FromString(name))
-	python.PyTuple_SET_ITEM(a, 1, python.PyInt_FromLong(age))
-
-	ret := attr.CallObject(a)
-
-	// Python threw an exception! Return an error here to the go caller?
-	if ret == nil {
-		python.PyErr_PrintEx(false)
-	}
-
-	fmt.Println("GO: Done", ret)
-}
-
-func RunTest(num int) {
-	lock.Lock()
-	defer lock.Unlock()
-	done := make(chan bool)
-
-	thread := PtCreate(func() {
-		gil := C.PyGILState_Ensure()
-		defer C.PyGILState_Release(gil)
-
-		testFunctionTypes("joe", num)
-
-		done <- true
-	})
-
-	defer thread.Kill()
-	<-done
-	close(done)
 }
 
 //

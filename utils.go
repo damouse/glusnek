@@ -7,8 +7,3 @@ func checkError(e error) {
 		panic(e)
 	}
 }
-
-// Dummy entry point tester
-func Create_thread(num int) {
-	RunTest(num)
-}
