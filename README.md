@@ -77,3 +77,19 @@ $ cd demo
 $ python main.py 
 Why do humans instinctively fear snakes?
 ```
+
+# TODO
+
+- Objects for modules
+- go-py type conversion
+- py-go type conversion
+- Model objects for imports
+
+#### Advanced Features:
+
+* "Permanent", goroutine-safe imports
+* Performance Cleanup
+    * Dynamically create threads as needed to handle requests
+    * Pre-create goroutines for outbound
+
+* Getting object references from python
