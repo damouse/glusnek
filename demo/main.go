@@ -57,7 +57,20 @@ func checkError(e error) {
 	}
 }
 
+// Testing better ways of packaging arguments into python format
+func packer() {
+	module, _ := gosnake.Import("adder")
+	result, err := module.Call("sandy", "hello", 1)
+
+	if err != nil {
+		fmt.Println("Error: ", err)
+	} else {
+		fmt.Println("Success: ", result)
+	}
+}
+
 func main() {
 	// demos()
-	stress()
+	// stress()
+	packer()
 }
