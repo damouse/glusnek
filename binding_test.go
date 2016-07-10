@@ -24,10 +24,10 @@ func TestBadImport(t *testing.T) {
 //
 func TestPyNoneNone(t *testing.T) {
 	module, _ := Import("testmodule")
-	_, e := module.Call("callee_none_none")
+	r, e := module.Call("callee_none_none")
 
 	assert.Nil(t, e)
-	// TODO: return types
+	assert.Equal(t, nil, r)
 }
 
 func TestPyThreeNone(t *testing.T) {
