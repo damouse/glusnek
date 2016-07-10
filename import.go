@@ -8,9 +8,6 @@ import (
 
 // Importing functions from python go, calling them from go, and returning the results to go
 
-// Channel by which threads receive operations
-var opChan chan *Operation
-
 // Try to import python module name
 func tryImport(name string) error {
 	gil := python.PyGILState_Ensure()

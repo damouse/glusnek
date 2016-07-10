@@ -80,17 +80,21 @@ Why do humans instinctively fear snakes?
 
 # TODO
 
-- Tests green on existing work
-- go-py type conversion
-- py-go type conversion
-- multi-level imports
-- package imports
+- Dictionary support
+- Cumincated functions
+- Multi-level imports (from a.b.c import d)
+- Exception handling
+- Benchmark tests
+- Formal stability tests
+- Concurrency tests
+- Cleanup and deinit 
+- Exporting: exportable methods, panic on non-functions, unexport
 
 #### Advanced Features:
 
-* "Permanent", goroutine-safe imports
-* Performance Cleanup
-    * Dynamically create threads as needed to handle requests
-    * Pre-create goroutines for outbound
-
-* Getting object references from python
+- "Permanent", goroutine-safe imports
+- Performance Cleanup
+    - Dynamically create threads as needed to handle requests
+    - Pre-create goroutines for outbound
+- Getting object references from python
+- Better python interface, preferably screwing with  __attr__

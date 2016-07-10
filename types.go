@@ -96,7 +96,11 @@ func togo(o *python.PyObject) (interface{}, error) {
 		return nil, nil
 
 	} else {
-		return nil, fmt.Errorf("gosnake: py -> go unknown typ")
+		// TOOD: garbage collect these?
+		typ := python.PyString_AsString(o.Type().Repr())
+		repr := python.PyString_AsString(o.Repr())
+
+		return nil, fmt.Errorf("gosnake: py -> go cant convert %s %s to go", repr, typ)
 	}
 }
 

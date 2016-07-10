@@ -4,16 +4,18 @@ package gosnake
 //#include "binding.h"
 import "C"
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"reflect"
+	"runtime"
+	"strings"
+)
 
-// Exported go functions to python
-// Go functions exposed to python
-type ExportedFunction func([]interface{}, map[string]interface{}) ([]interface{}, error)
+// Global map of exported functions. Move this to the Module object
+var exports map[string]interface{} = map[string]interface{}{}
 
-var exports map[string]*ExportedFunction
-
-// An invocation FROM python to go
-// TODO: raise errors from the go invocation back to python
+// Called from python through the C code in binding.h. Returns the result across the binding
 //export _gosnake_invoke
 func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
 	// Building data structures ourselves and sending them to go can be... a little icky
@@ -24,4 +26,33 @@ func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
 
 	cmode := C.CString(ret)
 	return cmode
+}
+
+// Exports a go function to python. This must be an unbound, top-level function, not one with a
+// receiver or an anonymous function. The name of the function in Go becomes the name of the
+// function in python.
+//
+// Example (go):
+//      func mygolangfunction() { }
+//      gosnake.Export(mygolangfunction)
+//
+// python:
+//      gosnake.gocall("mygolangfunction")
+//
+// Currently panics if the passed function is a method or anonymous
+func Export(fn interface{}) error {
+	// todo: deal with this err
+	name := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
+
+	// Method above returns functions in the form :  main.foo
+	parts := strings.Split(name, ".")
+
+	if len(parts) < 2 {
+		return fmt.Errorf("Cant resolve function name for exporting")
+	}
+
+	ending := parts[len(parts)-1]
+	exports[ending] = fn
+
+	return nil
 }

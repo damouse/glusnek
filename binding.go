@@ -15,6 +15,8 @@ import (
 )
 
 var (
+	opChan chan *Operation // Channel by which threads receive operations
+
 	POOL_SIZE int = 10 // Thread Pool
 	pool      []*pthread.Thread
 
@@ -41,7 +43,7 @@ func initializeBinding() {
 	}
 }
 
-// Threads from the threadpool never leave this method
+// Consumes an operation off the operation channel and sends it to the process function
 func threadConsume() {
 	// TODO: kill the thread if the channel is closed
 
@@ -56,7 +58,7 @@ func threadConsume() {
 	}
 }
 
-// Process an operation. This is a call to python
+// Process an operation, aka make a call to python
 func threadProcess(op *Operation) (interface{}, error) {
 	gil := python.PyGILState_Ensure()
 
@@ -78,7 +80,7 @@ func threadProcess(op *Operation) (interface{}, error) {
 	// Call into Python
 	ret := fn.CallObject(args)
 
-	// Deserialize
+	// Unpack result
 	result, err := togo(ret)
 	if err != nil {
 		return "", err

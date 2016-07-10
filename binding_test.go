@@ -49,16 +49,19 @@ func TestPyNoneOne(t *testing.T) {
 //
 // Py -> Go
 //
-// func TestCallGo(t *testing.T) {
-// 	b := NewBinding()
-// 	b.Import("adder")
+func testexport() {}
 
-// 	// callback := func()
+func TestSuccessfulExport(t *testing.T) {
+	err := Export(testexport)
+	assert.Nil(t, err)
+}
 
-// 	r, e := b.Call("adder", "callback", "bill", 15)
+func TestGoNoneNone(t *testing.T) {
+	Export(testexport)
 
-// 	assert.Nil(t, e)
-// 	cast := r.([]interface{})
-// 	assert.Equal(t, "bill", cast[0].(string))
-// 	assert.Equal(t, 15, cast[1].(int))
-// }
+	module, _ := Import("testmodule")
+	r, e := module.Call("reflect_call", "testexport")
+
+	assert.Nil(t, e)
+	assert.Nil(t, r)
+}

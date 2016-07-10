@@ -5,7 +5,8 @@ package gosnake
 type Operation struct {
 	module *Module // previously imported module
 	target string  // the name of the target function
-	args   []interface{}
+
+	args []interface{}
 
 	returnChan chan interface{}
 	errChan    chan error
