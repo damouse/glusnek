@@ -36,9 +36,6 @@ func getExport(target string) (*cumin.Curry, bool) {
 func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
 	transform := python.PyObject_FromVoidPtr(unsafe.Pointer(args))
 
-	var target string
-	var goArgs []interface{}
-
 	if unpacked, e := togo(transform); e != nil {
 		fmt.Println("GO: an error occured! ", e)
 
@@ -48,30 +45,24 @@ func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
 	} else if len(arr) < 1 {
 		fmt.Println("GO: not enough arguments to gocall")
 
-	} else if t, ok := arr[0].(string); !ok {
+	} else if target, ok := arr[0].(string); !ok {
 		fmt.Println("GO: method name wasnt a string")
 
-	} else {
-		target = t
-		goArgs = arr[1:]
-	}
-
-	if curry, ok := getExport(target); !ok {
+	} else if curry, ok := getExport(target); !ok {
 		fmt.Println("GO: no function exported as ", target)
-		panic("err")
 
-	} else if results, err := curry.Invoke(goArgs); err != nil {
+	} else if results, err := curry.Invoke(arr[1:]); err != nil {
 		fmt.Println("GO: exported function erred. Name:", target, err)
-		panic(err)
 
 	} else if b, err := json.Marshal(results); err != nil {
 		// Returns can be icky, so we're sticking to json for now
 		fmt.Printf("Unable to marshal results: %v", results)
-		panic(err)
 
 	} else {
 		return C.CString(string(b))
 	}
+
+	panic("fatal error")
 }
 
 // Exports a go function to python. This must be an unbound, top-level function, not one with a
