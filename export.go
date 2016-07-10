@@ -18,19 +18,6 @@ import (
 var exportLock = &sync.RWMutex{}
 var exports map[string]*cumin.Curry = map[string]*cumin.Curry{}
 
-func getExport(target string) (*cumin.Curry, bool) {
-	exportLock.RLock()
-	defer exportLock.RUnlock()
-
-	for name, f := range exports {
-		if name == target {
-			return f, true
-		}
-	}
-
-	return nil, false
-}
-
 // Called from python through the C code in binding.h. Returns the result across the binding
 //export _gosnake_invoke
 func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
@@ -84,4 +71,18 @@ func Export(fn interface{}) error {
 		exports[curry.Name()] = curry
 		return nil
 	}
+}
+
+// Utility method. Grab an export using the lock
+func getExport(target string) (*cumin.Curry, bool) {
+	exportLock.RLock()
+	defer exportLock.RUnlock()
+
+	for name, f := range exports {
+		if name == target {
+			return f, true
+		}
+	}
+
+	return nil, false
 }

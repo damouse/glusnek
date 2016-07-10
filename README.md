@@ -80,7 +80,6 @@ Why do humans instinctively fear snakes?
 
 # TODO
 
-- Lock all the global maps
 - Dictionary support
 - Multi-level imports (from a.b.c import d)
 - Exception handling
@@ -102,3 +101,4 @@ Why do humans instinctively fear snakes?
     - Pre-create goroutines for outbound
 - Getting object references from python
 - Better python interface, preferably screwing with  __attr__
+- Exporting entire go package using the reflection tools from github.com/damouse/pinmo
