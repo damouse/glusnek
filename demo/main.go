@@ -58,9 +58,6 @@ func checkError(e error) {
 }
 
 func main() {
-	demos()
-	// stress()
+	// demos()
+	stress()
 }
-
-// fatal error: unexpected signal during runtime execution
-// [signal 0x7 code=0x80 addr=0x0 pc=0x7fcdf668fcda]

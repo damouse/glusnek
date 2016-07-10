@@ -10,29 +10,18 @@ package gosnake
 import "C"
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/liamzdenek/go-pthreads"
 	"github.com/sbinet/go-python"
 )
 
-// Thread Pool
-var POOL_SIZE int = 10
-var pool []*pthread.Thread
+var (
+	POOL_SIZE int = 10 // Thread Pool
+	pool      []*pthread.Thread
 
-// Channel by which threads receive operations
-var opChan chan *Operation
+	_INITIALIZED bool = false // Silly initialization global. func init() doesn't work
+)
 
-// Silly initialization global. Please fix
-var _INITIALIZED bool = false
-
-// Go functions exposed to python
-type ExportedFunction func([]interface{}, map[string]interface{}) ([]interface{}, error)
-
-var exports map[string]*ExportedFunction
-
-// Interestingly this doesnt work as a package init function. Not sure why
+// Initialize python environment and create the pthread pool
 func initializeBinding() {
 	if _INITIALIZED {
 		return
@@ -52,22 +41,10 @@ func initializeBinding() {
 	}
 }
 
-// Make sure that a module can actually be imported
-func tryImport(name string) error {
-	gil := python.PyGILState_Ensure()
-	defer python.PyGILState_Release(gil)
-
-	if m := python.PyImport_ImportModule(name); m == nil {
-		return fmt.Errorf("Could not find a python module named \"%s\"", name)
-	} else {
-		m.DecRef()
-		return nil
-	}
-}
-
-// Thread spinloop
-// TODO: kill the thread if the channel is closed
+// Threads from the threadpool never leave this method
 func threadConsume() {
+	// TODO: kill the thread if the channel is closed
+
 	for {
 		op := <-opChan
 
@@ -79,7 +56,7 @@ func threadConsume() {
 	}
 }
 
-// Process a call from go to python. Should only be called from threadConsume!
+// Process an operation. This is a call to python
 func threadProcess(op *Operation) (interface{}, error) {
 	gil := python.PyGILState_Ensure()
 
@@ -107,8 +84,6 @@ func threadProcess(op *Operation) (interface{}, error) {
 		return "", err
 	}
 
-	// resultString := python.PyString_AsString(ret)
-
 	// Cleanup
 	ret.DecRef()
 	args.DecRef()
@@ -118,31 +93,3 @@ func threadProcess(op *Operation) (interface{}, error) {
 	python.PyGILState_Release(gil)
 	return result, nil
 }
-
-// An invocation FROM python to go
-// TODO: raise errors from the go invocation back to python
-//export _gosnake_invoke
-func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
-	// Building data structures ourselves and sending them to go can be... a little icky
-	// For now everything goes back as json
-	a := []interface{}{"hello"}
-	b, _ := json.Marshal(a)
-	ret := string(b)
-
-	cmode := C.CString(ret)
-	return cmode
-}
-
-// // We can likely pool the pthreads, but that sounds like a problem for future mickey
-// // Should we check if threads are "busy"?
-// func Call(args string) string {
-// 	op := &Operation{
-// 		args:       args,
-// 		returnChan: make(chan string),
-// 	}
-
-// 	opChan <- op
-// 	ret := <-op.returnChan
-
-// 	return ret
-// }
