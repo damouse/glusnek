@@ -85,22 +85,15 @@ func threadConsume() {
 
 // Process a call from go to python. Should only be called from threadConsume!
 func threadProcess(op *Operation) (string, error) {
-	// Lock the gil
 	gil := python.PyGILState_Ensure()
 
 	// Import the module, target function
 	m := python.PyImport_ImportModule(op.module.name)
 	fn := m.GetAttrString(op.target)
-
 	m.IncRef()
 	fn.IncRef()
 
 	// Pack the arguments
-	// args := python.PyTuple_New(2)
-	// a1 := python.PyString_FromString(op.args)
-	// a2 := python.PyInt_FromLong(1234)
-	// python.PyTuple_SET_ITEM(args, 0, a1)
-	// python.PyTuple_SET_ITEM(args, 1, a2)
 	args, err := packTuple(op.args)
 
 	if err != nil {
@@ -109,8 +102,6 @@ func threadProcess(op *Operation) (string, error) {
 
 	// Retain the arguments
 	args.IncRef()
-	// a1.IncRef()
-	// a2.IncRef()
 
 	// Call into Python
 	ret := fn.CallObject(args)
@@ -123,12 +114,8 @@ func threadProcess(op *Operation) (string, error) {
 	args.DecRef()
 	m.DecRef()
 	fn.DecRef()
-	// a1.DecRef()
-	// a2.DecRef()
 
-	// Release the Gil
 	python.PyGILState_Release(gil)
-
 	return resultString, nil
 }
 
