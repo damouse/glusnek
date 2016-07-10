@@ -52,7 +52,7 @@ func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
 		fmt.Println("GO: no function exported as ", target)
 
 	} else if results, err := curry.Invoke(arr[1:]); err != nil {
-		fmt.Println("GO: exported function erred. Name:", target, err)
+		fmt.Println("GO: exported function erred. ", target, err, arr[1:])
 
 	} else if b, err := json.Marshal(results); err != nil {
 		// Returns can be icky, so we're sticking to json for now

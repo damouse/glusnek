@@ -27,6 +27,7 @@ def callee_none_one():
 #
 # Immediately call back into go
 def reflect_call(name, *args):
-    r = gosnake.gocall(name, args)
+    r = gosnake.gocall(name, *args)
+
     # print "Python completed go call with ", r
     # return r
