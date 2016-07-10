@@ -82,7 +82,6 @@ Why do humans instinctively fear snakes?
 
 - Lock all the global maps
 - Dictionary support
-- Cumincated functions
 - Multi-level imports (from a.b.c import d)
 - Exception handling
 - Benchmark tests
@@ -90,6 +89,10 @@ Why do humans instinctively fear snakes?
 - Concurrency tests
 - Cleanup and deinit 
 - Exporting: exportable methods, panic on non-functions, unexport
+
+#### Bugs
+
+- go -> py -> go always returns results as a list. This is likely due to the conversion process in binding.h. See `binding_test.go` line 80.
 
 #### Advanced Features:
 

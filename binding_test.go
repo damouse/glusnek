@@ -3,20 +3,20 @@ package gosnake
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/stretchr/testify/assert"
 )
 
 func TestSuccessfulImport(t *testing.T) {
 	module, err := Import("testmodule")
 
-	assert.Nil(t, err)
-	assert.Equal(t, "testmodule", module.name)
-	assert.Equal(t, _INITIALIZED, true)
+	Nil(t, err)
+	Equal(t, "testmodule", module.name)
+	Equal(t, _INITIALIZED, true)
 }
 
 func TestBadImport(t *testing.T) {
 	_, err := Import("idontexist")
-	assert.NotNil(t, err)
+	NotNil(t, err)
 }
 
 //
@@ -26,42 +26,60 @@ func TestPyNoneNone(t *testing.T) {
 	module, _ := Import("testmodule")
 	r, e := module.Call("callee_none_none")
 
-	assert.Nil(t, e)
-	assert.Equal(t, nil, r)
+	Nil(t, e)
+	Equal(t, nil, r)
 }
 
 func TestPyThreeNone(t *testing.T) {
 	module, _ := Import("testmodule")
 	r, e := module.Call("callee_three_none", "joe", 12, false)
 
-	assert.Nil(t, e)
-	assert.Equal(t, nil, r)
+	Nil(t, e)
+	Equal(t, nil, r)
 }
 
 func TestPyNoneOne(t *testing.T) {
 	module, _ := Import("testmodule")
 	r, e := module.Call("callee_none_one")
 
-	assert.Nil(t, e)
-	assert.Equal(t, "higo", r.(string))
+	Nil(t, e)
+	Equal(t, "higo", r.(string))
 }
 
 //
 // Py -> Go
 //
-func testexport() {}
+func export() {}
 
 func TestSuccessfulExport(t *testing.T) {
-	err := Export(testexport)
-	assert.Nil(t, err)
+	err := Export(export)
+	Nil(t, err)
 }
 
 func TestGoNoneNone(t *testing.T) {
-	Export(testexport)
+	Export(export)
 
 	module, _ := Import("testmodule")
-	r, e := module.Call("reflect_call", "testexport")
+	r, e := module.Call("reflect_call", "export")
 
-	assert.Nil(t, e)
-	assert.Nil(t, r)
+	Nil(t, e)
+	Nil(t, r)
+}
+
+func singleReturn(a int) int {
+	return a
+}
+
+func TestGoSingleReturn(t *testing.T) {
+	Export(singleReturn)
+
+	module, _ := Import("testmodule")
+	r, e := module.Call("reflect_call", "singleReturn", 1)
+
+	// This cast is *not correct*. We should receive a single int instead of a slice
+	// if returned an int
+	badResults := r.([]interface{})
+
+	Nil(t, e)
+	Equal(t, 1, badResults[0].(int))
 }
