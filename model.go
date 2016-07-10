@@ -1,5 +1,7 @@
 package gosnake
 
+import "fmt"
+
 // Models to expose interface
 
 type Operation struct {
@@ -50,8 +52,10 @@ func (b *Module) Call(function string, args ...interface{}) (interface{}, error)
 
 	select {
 	case e := <-op.errChan:
+		fmt.Println(e)
 		return nil, e
 	case r := <-op.returnChan:
+		fmt.Println(r)
 		return r, nil
 	}
 }

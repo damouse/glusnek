@@ -79,9 +79,11 @@ func threadProcess(op *Operation) (interface{}, error) {
 
 	// Call into Python
 	ret := fn.CallObject(args)
+	C.check_pyerr()
 
 	// Unpack result
 	result, err := togo(ret)
+
 	if err != nil {
 		return "", err
 	}

@@ -66,20 +66,20 @@ func TestGoNoneNone(t *testing.T) {
 	Nil(t, r)
 }
 
-func singleReturn(a int) int {
-	return a
-}
+// func singleReturn(a int) int {
+// 	return a
+// }
 
-func TestGoSingleReturn(t *testing.T) {
-	Export(singleReturn)
+// func TestGoSingleReturn(t *testing.T) {
+// 	Export(singleReturn)
 
-	module, _ := Import("testmodule")
-	r, e := module.Call("reflect_call", "singleReturn", 1)
+// 	module, _ := Import("testmodule")
+// 	r, e := module.Call("reflect_call", "singleReturn", 1)
 
-	// This cast is *not correct*. We should receive a single int instead of a slice
-	// if returned an int
-	badResults := r.([]interface{})
+// 	// This cast is *not correct*. We should receive a single int instead of a slice
+// 	// if returned an int
+// 	badResults := r.([]interface{})
 
-	Nil(t, e)
-	Equal(t, 1, badResults[0].(int))
-}
+// 	Nil(t, e)
+// 	Equal(t, 1, badResults[0].(int))
+// }

@@ -24,6 +24,7 @@ package gosnake
 
 //#cgo pkg-config: python-2.7
 //#include "Python.h"
+//#include "binding.h"
 import "C"
 
 import (
@@ -74,7 +75,6 @@ func topy(v interface{}) (ret *python.PyObject, err error) {
 
 // Converts python types to go types, recursively.
 func togo(o *python.PyObject) (interface{}, error) {
-
 	if python.PyString_Check(o) {
 		return python.PyString_AsString(o), nil
 

@@ -7,15 +7,29 @@ import "C"
 import (
 	"encoding/json"
 	"fmt"
+	"sync"
 	"unsafe"
 
 	"github.com/damouse/cumin"
 	"github.com/sbinet/go-python"
 )
 
-// TODO: lock the map!
 // Global map of exported functions. Move this to the Module object
+var exportLock = &sync.RWMutex{}
 var exports map[string]*cumin.Curry = map[string]*cumin.Curry{}
+
+func getExport(target string) (*cumin.Curry, bool) {
+	exportLock.RLock()
+	defer exportLock.RUnlock()
+
+	for name, f := range exports {
+		if name == target {
+			return f, true
+		}
+	}
+
+	return nil, false
+}
 
 // Called from python through the C code in binding.h. Returns the result across the binding
 //export _gosnake_invoke
@@ -42,19 +56,11 @@ func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
 		goArgs = arr[1:]
 	}
 
-	// Search for exported method
-	var curry *cumin.Curry
-	for name, f := range exports {
-		if name == target {
-			curry = f
-		}
-	}
-
-	if curry == nil {
+	if curry, ok := getExport(target); !ok {
 		fmt.Println("GO: no function exported as ", target)
-	}
+		panic("err")
 
-	if results, err := curry.Invoke(goArgs); err != nil {
+	} else if results, err := curry.Invoke(goArgs); err != nil {
 		fmt.Println("GO: exported function erred. Name:", target, err)
 		panic(err)
 
