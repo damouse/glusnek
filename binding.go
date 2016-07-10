@@ -27,6 +27,11 @@ var opChan chan *Operation
 // Silly initialization global. Please fix
 var _INITIALIZED bool = false
 
+// Go functions exposed to python
+type ExportedFunction func([]interface{}, map[string]interface{}) ([]interface{}, error)
+
+var exports map[string]*ExportedFunction
+
 // Interestingly this doesnt work as a package init function. Not sure why
 func initializeBinding() {
 	if _INITIALIZED {

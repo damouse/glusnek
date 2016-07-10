@@ -16,3 +16,8 @@ def callee_three_none(s, i, b):
 
 def callee_none_one():
     return "higo"
+
+
+# def caller_none_none():
+#     gosnake.gocall()
+#     pass

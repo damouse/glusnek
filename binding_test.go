@@ -32,10 +32,10 @@ func TestPyNoneNone(t *testing.T) {
 
 func TestPyThreeNone(t *testing.T) {
 	module, _ := Import("testmodule")
-	_, e := module.Call("callee_three_none", "joe", 12, false)
+	r, e := module.Call("callee_three_none", "joe", 12, false)
 
 	assert.Nil(t, e)
-	// TODO: return types
+	assert.Equal(t, nil, r)
 }
 
 func TestPyNoneOne(t *testing.T) {
