@@ -30,4 +30,4 @@ def reflect_call(name, *args):
     r = gosnake.gocall(name, *args)
 
     # print "Python completed go call with ", r
-    # return r
+    return r
