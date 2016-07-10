@@ -2,6 +2,15 @@ package gosnake
 
 // Models to expose interface
 
+type Operation struct {
+	module *Module // previously imported module
+	target string  // the name of the target function
+	args   []interface{}
+
+	returnChan chan interface{}
+	errChan    chan error
+}
+
 // Representation of a python module
 type Module struct {
 	name string
@@ -31,7 +40,7 @@ func (b *Module) Call(function string, args ...interface{}) (interface{}, error)
 		module:     b,
 		target:     function,
 		args:       args,
-		returnChan: make(chan string),
+		returnChan: make(chan interface{}),
 		errChan:    make(chan error),
 	}
 

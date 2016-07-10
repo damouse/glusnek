@@ -7,4 +7,12 @@ import gosnake
 
 
 def callee_none_none():
-    return ""
+    return None
+
+
+def callee_three_none(s, i, b):
+    return None
+
+
+def callee_none_one():
+    return "higo"

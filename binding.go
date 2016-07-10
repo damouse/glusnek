@@ -27,15 +27,6 @@ var opChan chan *Operation
 // Silly initialization global. Please fix
 var _INITIALIZED bool = false
 
-type Operation struct {
-	module *Module // previously imported module
-	target string  // the name of the target function
-	args   []interface{}
-
-	returnChan chan string
-	errChan    chan error
-}
-
 // Interestingly this doesnt work as a package init function. Not sure why
 func initializeBinding() {
 	if _INITIALIZED {
@@ -84,7 +75,7 @@ func threadConsume() {
 }
 
 // Process a call from go to python. Should only be called from threadConsume!
-func threadProcess(op *Operation) (string, error) {
+func threadProcess(op *Operation) (interface{}, error) {
 	gil := python.PyGILState_Ensure()
 
 	// Import the module, target function
@@ -95,7 +86,6 @@ func threadProcess(op *Operation) (string, error) {
 
 	// Pack the arguments
 	args, err := packTuple(op.args)
-
 	if err != nil {
 		return "", err
 	}
@@ -107,7 +97,12 @@ func threadProcess(op *Operation) (string, error) {
 	ret := fn.CallObject(args)
 
 	// Deserialize
-	resultString := python.PyString_AsString(ret)
+	result, err := togo(ret)
+	if err != nil {
+		return "", err
+	}
+
+	// resultString := python.PyString_AsString(ret)
 
 	// Cleanup
 	ret.DecRef()
@@ -116,7 +111,7 @@ func threadProcess(op *Operation) (string, error) {
 	fn.DecRef()
 
 	python.PyGILState_Release(gil)
-	return resultString, nil
+	return result, nil
 }
 
 // An invocation FROM python to go

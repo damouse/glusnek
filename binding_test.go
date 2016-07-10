@@ -22,13 +22,29 @@ func TestBadImport(t *testing.T) {
 //
 // Test names are in the following format: Test{TargetLanguage}{Arguments}{Return}
 //
-// func TestPyNoneNone(t *testing.T) {
-// 	module, _ := Import("testmodule")
+func TestPyNoneNone(t *testing.T) {
+	module, _ := Import("testmodule")
+	_, e := module.Call("callee_none_none")
 
-// 	_, e := module.Call("callee_none_none")
-// 	assert.Nil(t, e)
-// 	// TODO: return types
-// }
+	assert.Nil(t, e)
+	// TODO: return types
+}
+
+func TestPyThreeNone(t *testing.T) {
+	module, _ := Import("testmodule")
+	_, e := module.Call("callee_three_none", "joe", 12, false)
+
+	assert.Nil(t, e)
+	// TODO: return types
+}
+
+func TestPyNoneOne(t *testing.T) {
+	module, _ := Import("testmodule")
+	r, e := module.Call("callee_none_one")
+
+	assert.Nil(t, e)
+	assert.Equal(t, "higo", r.(string))
+}
 
 //
 // Py -> Go
