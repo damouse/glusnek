@@ -1,7 +1,5 @@
 package gosnake
 
-// WARN: PYTHONPATH must be set to demo before tests can run!
-
 import (
 	"testing"
 
@@ -9,10 +7,10 @@ import (
 )
 
 func TestSuccessfulImport(t *testing.T) {
-	module, err := Import("adder")
+	module, err := Import("testmodule")
 
 	assert.Nil(t, err)
-	assert.Equal(t, "adder", module.name)
+	assert.Equal(t, "testmodule", module.name)
 	assert.Equal(t, _INITIALIZED, true)
 }
 
@@ -22,18 +20,14 @@ func TestBadImport(t *testing.T) {
 }
 
 //
-// Go -> Py
+// Test names are in the following format: Test{TargetLanguage}{Arguments}{Return}
 //
-// func TestCallPy(t *testing.T) {
-// 	b := NewBinding()
-// 	b.Import("adder")
+// func TestPyNoneNone(t *testing.T) {
+// 	module, _ := Import("testmodule")
 
-// 	r, e := b.Call("adder", "birthday", "bill", 15)
-
+// 	_, e := module.Call("callee_none_none")
 // 	assert.Nil(t, e)
-// 	cast := r.([]interface{})
-// 	assert.Equal(t, "bill", cast[0].(string))
-// 	assert.Equal(t, 15, cast[1].(int))
+// 	// TODO: return types
 // }
 
 //

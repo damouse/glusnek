@@ -30,12 +30,18 @@ func (b *Module) Call(function string, args ...interface{}) (interface{}, error)
 	op := &Operation{
 		module:     b,
 		target:     function,
-		args:       "",
+		args:       args,
 		returnChan: make(chan string),
+		errChan:    make(chan error),
 	}
 
+	// Enqueue the operation
 	opChan <- op
 
-	ret := <-op.returnChan
-	return ret, nil
+	select {
+	case e := <-op.errChan:
+		return nil, e
+	case r := <-op.returnChan:
+		return r, nil
+	}
 }

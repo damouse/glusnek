@@ -83,7 +83,8 @@ Why do humans instinctively fear snakes?
 - Tests green on existing work
 - go-py type conversion
 - py-go type conversion
-- Fail on bad import name
+- multi-level imports
+- package imports
 
 #### Advanced Features:
 

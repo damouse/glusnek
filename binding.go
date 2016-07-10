@@ -30,9 +30,10 @@ var _INITIALIZED bool = false
 type Operation struct {
 	module *Module // previously imported module
 	target string  // the name of the target function
-	args   string
+	args   []interface{}
 
 	returnChan chan string
+	errChan    chan error
 }
 
 // Interestingly this doesnt work as a package init function. Not sure why
@@ -68,54 +69,67 @@ func tryImport(name string) error {
 	}
 }
 
-// Consume an operation from the queue
+// Thread spinloop
+// TODO: kill the thread if the channel is closed
 func threadConsume() {
 	for {
-		// Grab a new operation
 		op := <-opChan
 
-		// Lock the gil
-		gil := python.PyGILState_Ensure()
-
-		// Import the module, target function
-		m := python.PyImport_ImportModule(op.module.name)
-		fn := m.GetAttrString(op.target)
-
-		m.IncRef()
-		fn.IncRef()
-
-		// Pack the arguments
-		args := python.PyTuple_New(2)
-		a1 := python.PyString_FromString(op.args)
-		a2 := python.PyInt_FromLong(1234)
-		python.PyTuple_SET_ITEM(args, 0, a1)
-		python.PyTuple_SET_ITEM(args, 1, a2)
-
-		// Retain the arguments
-		args.IncRef()
-		a1.IncRef()
-		a2.IncRef()
-
-		// Call into Python
-		ret := fn.CallObject(args)
-
-		// Deserialize
-		resultString := python.PyString_AsString(ret)
-
-		// Cleanup
-		ret.DecRef()
-		args.DecRef()
-		m.DecRef()
-		fn.DecRef()
-		args.DecRef()
-		a1.DecRef()
-		a2.DecRef()
-
-		// Release the Gil
-		python.PyGILState_Release(gil)
-
-		op.returnChan <- resultString
+		if result, err := threadProcess(op); err != nil {
+			op.errChan <- err
+		} else {
+			op.returnChan <- result
+		}
 	}
+}
+
+// Process a call from go to python. Should only be called from threadConsume!
+func threadProcess(op *Operation) (string, error) {
+	// Lock the gil
+	gil := python.PyGILState_Ensure()
+
+	// Import the module, target function
+	m := python.PyImport_ImportModule(op.module.name)
+	fn := m.GetAttrString(op.target)
+
+	m.IncRef()
+	fn.IncRef()
+
+	// Pack the arguments
+	// args := python.PyTuple_New(2)
+	// a1 := python.PyString_FromString(op.args)
+	// a2 := python.PyInt_FromLong(1234)
+	// python.PyTuple_SET_ITEM(args, 0, a1)
+	// python.PyTuple_SET_ITEM(args, 1, a2)
+	args, err := packTuple(op.args)
+
+	if err != nil {
+		return "", err
+	}
+
+	// Retain the arguments
+	args.IncRef()
+	// a1.IncRef()
+	// a2.IncRef()
+
+	// Call into Python
+	ret := fn.CallObject(args)
+
+	// Deserialize
+	resultString := python.PyString_AsString(ret)
+
+	// Cleanup
+	ret.DecRef()
+	args.DecRef()
+	m.DecRef()
+	fn.DecRef()
+	// a1.DecRef()
+	// a2.DecRef()
+
+	// Release the Gil
+	python.PyGILState_Release(gil)
+
+	return resultString, nil
 }
 
 // An invocation FROM python to go
@@ -132,16 +146,16 @@ func _gosnake_invoke(self *C.PyObject, args *C.PyObject) *C.char {
 	return cmode
 }
 
-// We can likely pool the pthreads, but that sounds like a problem for future mickey
-// Should we check if threads are "busy"?
-func Call(args string) string {
-	op := &Operation{
-		args:       args,
-		returnChan: make(chan string),
-	}
+// // We can likely pool the pthreads, but that sounds like a problem for future mickey
+// // Should we check if threads are "busy"?
+// func Call(args string) string {
+// 	op := &Operation{
+// 		args:       args,
+// 		returnChan: make(chan string),
+// 	}
 
-	opChan <- op
+// 	opChan <- op
+// 	ret := <-op.returnChan
 
-	ret := <-op.returnChan
-	return ret
-}
+// 	return ret
+// }

@@ -58,8 +58,8 @@ func checkError(e error) {
 }
 
 func main() {
-	// demos()
-	stress()
+	demos()
+	// stress()
 }
 
 // fatal error: unexpected signal during runtime execution
