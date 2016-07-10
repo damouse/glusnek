@@ -1,47 +1,85 @@
 package gosnake
 
-// WARN: PYTHONPATH must be set to demo before tests can run!
-
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/stretchr/testify/assert"
 )
 
-func TestImport(t *testing.T) {
-	b := NewBinding()
-	e := b.Import("adder")
-	assert.Nil(t, e)
+func TestSuccessfulImport(t *testing.T) {
+	module, err := Import("testmodule")
+
+	Nil(t, err)
+	Equal(t, "testmodule", module.name)
+	Equal(t, _INITIALIZED, true)
+}
+
+func TestBadImport(t *testing.T) {
+	_, err := Import("idontexist")
+	NotNil(t, err)
 }
 
 //
-// Go -> Py
+// Test names are in the following format: Test{TargetLanguage}{Arguments}{Return}
 //
-func TestCallPy(t *testing.T) {
-	b := NewBinding()
-	b.Import("adder")
+func TestPyNoneNone(t *testing.T) {
+	module, _ := Import("testmodule")
+	r, e := module.Call("callee_none_none")
 
-	r, e := b.Call("adder", "birthday", "bill", 15)
+	Nil(t, e)
+	Equal(t, nil, r)
+}
 
-	assert.Nil(t, e)
-	cast := r.([]interface{})
-	assert.Equal(t, "bill", cast[0].(string))
-	assert.Equal(t, 15, cast[1].(int))
+func TestPyThreeNone(t *testing.T) {
+	module, _ := Import("testmodule")
+	r, e := module.Call("callee_three_none", "joe", 12, false)
+
+	Nil(t, e)
+	Equal(t, nil, r)
+}
+
+func TestPyNoneOne(t *testing.T) {
+	module, _ := Import("testmodule")
+	r, e := module.Call("callee_none_one")
+
+	Nil(t, e)
+	Equal(t, "higo", r.(string))
 }
 
 //
 // Py -> Go
 //
-// func TestCallGo(t *testing.T) {
-// 	b := NewBinding()
-// 	b.Import("adder")
+func export() {}
 
-// 	// callback := func()
+func TestSuccessfulExport(t *testing.T) {
+	err := Export(export)
+	Nil(t, err)
+}
 
-// 	r, e := b.Call("adder", "callback", "bill", 15)
+func TestGoNoneNone(t *testing.T) {
+	Export(export)
 
-// 	assert.Nil(t, e)
-// 	cast := r.([]interface{})
-// 	assert.Equal(t, "bill", cast[0].(string))
-// 	assert.Equal(t, 15, cast[1].(int))
-// }
+	module, _ := Import("testmodule")
+	r, e := module.Call("reflect_call", "export")
+
+	Nil(t, e)
+	Nil(t, r)
+}
+
+func singleReturn(a int) int {
+	return a
+}
+
+func TestGoSingleReturn(t *testing.T) {
+	Export(singleReturn)
+
+	module, _ := Import("testmodule")
+	r, e := module.Call("reflect_call", "singleReturn", 1)
+
+	// This cast is *not correct*. We should receive a single int instead of a slice
+	// if returned an int
+	badResults := r.([]interface{})
+
+	Nil(t, e)
+	Equal(t, 1, badResults[0].(int))
+}

@@ -80,16 +80,25 @@ Why do humans instinctively fear snakes?
 
 # TODO
 
-- Objects for modules
-- go-py type conversion
-- py-go type conversion
-- Model objects for imports
+- Lock all the global maps
+- Dictionary support
+- Multi-level imports (from a.b.c import d)
+- Exception handling
+- Benchmark tests
+- Formal stability tests
+- Concurrency tests
+- Cleanup and deinit 
+- Exporting: exportable methods, panic on non-functions, unexport
+
+#### Bugs
+
+- go -> py -> go always returns results as a list. This is likely due to the conversion process in binding.h. See `binding_test.go` line 80.
 
 #### Advanced Features:
 
-* "Permanent", goroutine-safe imports
-* Performance Cleanup
-    * Dynamically create threads as needed to handle requests
-    * Pre-create goroutines for outbound
-
-* Getting object references from python
+- "Permanent", goroutine-safe imports
+- Performance Cleanup
+    - Dynamically create threads as needed to handle requests
+    - Pre-create goroutines for outbound
+- Getting object references from python
+- Better python interface, preferably screwing with  __attr__

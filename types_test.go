@@ -27,21 +27,21 @@ func TestIntToGo(t *testing.T) {
 	assert.Equal(t, o, c.(int))
 }
 
-// func TestBoolToGo(t *testing.T) {
-// 	o := 123
-// 	c, e := togo(python.PyInt_FromLong(o))
+func TestBoolToGo(t *testing.T) {
+	o := 123
+	c, e := togo(python.PyInt_FromLong(o))
 
-// 	assert.Nil(t, e)
-// 	assert.Equal(t, o, c.(int))
-// }
+	assert.Nil(t, e)
+	assert.Equal(t, o, c.(int))
+}
 
-// func TestFloatToGo(t *testing.T) {
-// 	o := float64(1234)
-// 	c, e := togo(python.PyLong_FromDouble(o))
+func TestFloatToGo(t *testing.T) {
+	o := float64(1234)
+	c, e := togo(python.PyLong_FromDouble(o))
 
-// 	assert.Nil(t, e)
-// 	assert.Equal(t, o, c.(float64))
-// }
+	assert.Nil(t, e)
+	assert.Equal(t, o, c.(float64))
+}
 
 func TestTupleToGo(t *testing.T) {
 	tup := python.PyTuple_New(2)
@@ -78,13 +78,11 @@ func TestNoneToGo(t *testing.T) {
 	assert.Equal(t, c, nil)
 }
 
-// None
 // Dictionaries
 
 //
 // Go -> Python
 //
-
 func TestIntToPy(t *testing.T) {
 	o := 123
 	c, e := topy(o)
@@ -126,6 +124,12 @@ func TestNoneToPy(t *testing.T) {
 	assert.True(t, isNone(c))
 }
 
-// None
+// func TestListToPy(t *testing.T) {
+// 	c, e := topy([]string{"a", "b"})
+
+// 	assert.Nil(t, e)
+// 	assert.True(t, python.PyList_Check(c))
+// }
+
 // Arrays
 // Dictionaries

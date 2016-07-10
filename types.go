@@ -22,8 +22,8 @@ package gosnake
    void * -> unsafe.Pointer
 */
 
-// #cgo pkg-config: python-2.7
-// #include "Python.h"
+//#cgo pkg-config: python-2.7
+//#include "Python.h"
 import "C"
 
 import (
@@ -72,8 +72,7 @@ func topy(v interface{}) (ret *python.PyObject, err error) {
 	return
 }
 
-// Conversion to go types (python -> go)
-// honestly I'd rather use cumin for this, but that seems a lot more involved
+// Converts python types to go types, recursively.
 func togo(o *python.PyObject) (interface{}, error) {
 
 	if python.PyString_Check(o) {
@@ -92,11 +91,20 @@ func togo(o *python.PyObject) (interface{}, error) {
 		r, e := unpackList(o)
 		return r, e
 
+	} else if python.PyString_AsString(o.Type().Repr()) == "<type 'unicode'>" {
+		// This is dirty, but the unicode checks aren't being useful
+		str := python.PyString_AsString(o.Repr())
+		return str[2 : len(str)-1], nil
+
 	} else if isNone(o) {
 		return nil, nil
 
 	} else {
-		return nil, fmt.Errorf("gosnake: py -> go unknown typ")
+		// TOOD: garbage collect these?
+		typ := python.PyString_AsString(o.Type().Repr())
+		repr := python.PyString_AsString(o.Repr())
+
+		return nil, fmt.Errorf("gosnake: py -> go cant convert %s %s to go", repr, typ)
 	}
 }
 
