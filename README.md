@@ -80,6 +80,7 @@ Why do humans instinctively fear snakes?
 
 # TODO
 
+- Lock all the global maps
 - Dictionary support
 - Cumincated functions
 - Multi-level imports (from a.b.c import d)
