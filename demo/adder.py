@@ -41,3 +41,10 @@ def run(*a):
     # time.sleep(2)  # delays for 5 seconds
 
     return json.dumps([threading.currentThread().ident, counter] + list(a))
+
+
+#
+# Sandbox
+#
+def sandy(*args):
+    print "PY: ", args

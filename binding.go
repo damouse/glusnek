@@ -10,6 +10,8 @@ package gosnake
 import "C"
 
 import (
+	"fmt"
+
 	"github.com/liamzdenek/go-pthreads"
 	"github.com/sbinet/go-python"
 )
@@ -80,8 +82,13 @@ func threadProcess(op *Operation) (interface{}, error) {
 	// Call into Python
 	ret := fn.CallObject(args)
 
+	if e := checkPythonErr(); e != nil {
+		return nil, e
+	}
+
 	// Unpack result
 	result, err := togo(ret)
+
 	if err != nil {
 		return "", err
 	}
@@ -94,4 +101,17 @@ func threadProcess(op *Operation) (interface{}, error) {
 
 	python.PyGILState_Release(gil)
 	return result, nil
+}
+
+// Returns the current exception if one exists, prints the stacktrace, and clears error flags
+func checkPythonErr() error {
+	if e := python.PyErr_Occurred(); e != nil {
+		_, val, _ := python.PyErr_Fetch()
+		python.PyErr_PrintEx(false)
+
+		// This works
+		return fmt.Errorf("%s", python.PyString_AsString(val.Str()))
+	}
+
+	return nil
 }

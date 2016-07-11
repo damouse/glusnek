@@ -1,5 +1,11 @@
 package gosnake
 
+import (
+	"fmt"
+
+	"github.com/sbinet/go-python"
+)
+
 // Models to expose interface
 
 type Operation struct {
@@ -53,5 +59,18 @@ func (b *Module) Call(function string, args ...interface{}) (interface{}, error)
 		return nil, e
 	case r := <-op.returnChan:
 		return r, nil
+	}
+}
+
+// Try to import python module name
+func tryImport(name string) error {
+	gil := python.PyGILState_Ensure()
+	defer python.PyGILState_Release(gil)
+
+	if m := python.PyImport_ImportModule(name); m == nil {
+		return fmt.Errorf("Could not find a python module named \"%s\"", name)
+	} else {
+		m.DecRef()
+		return nil
 	}
 }

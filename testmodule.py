@@ -21,12 +21,17 @@ def callee_three_none(s, i, b):
 def callee_none_one():
     return "higo"
 
+# Raise an exception
+def raise_err():
+    raise Exception('Somthing has gone terribly wrong')
+
 
 #
 # Calling into go
 #
 # Immediately call back into go
-def reflect_call(name, args):
-    r = gosnake.gocall(name, args)
+def reflect_call(name, *args):
+    r = gosnake.gocall(name, *args)
+
     # print "Python completed go call with ", r
     return r

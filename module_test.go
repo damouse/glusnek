@@ -19,9 +19,6 @@ func TestBadImport(t *testing.T) {
 	NotNil(t, err)
 }
 
-//
-// Test names are in the following format: Test{TargetLanguage}{Arguments}{Return}
-//
 func TestPyNoneNone(t *testing.T) {
 	module, _ := Import("testmodule")
 	r, e := module.Call("callee_none_none")
@@ -46,40 +43,10 @@ func TestPyNoneOne(t *testing.T) {
 	Equal(t, "higo", r.(string))
 }
 
-//
-// Py -> Go
-//
-func export() {}
-
-func TestSuccessfulExport(t *testing.T) {
-	err := Export(export)
-	Nil(t, err)
-}
-
-func TestGoNoneNone(t *testing.T) {
-	Export(export)
-
+func TestException(t *testing.T) {
 	module, _ := Import("testmodule")
-	r, e := module.Call("reflect_call", "export")
+	r, e := module.Call("raise_err")
 
-	Nil(t, e)
+	NotNil(t, e)
 	Nil(t, r)
-}
-
-func singleReturn(a int) int {
-	return a
-}
-
-func TestGoSingleReturn(t *testing.T) {
-	Export(singleReturn)
-
-	module, _ := Import("testmodule")
-	r, e := module.Call("reflect_call", "singleReturn", 1)
-
-	// This cast is *not correct*. We should receive a single int instead of a slice
-	// if returned an int
-	badResults := r.([]interface{})
-
-	Nil(t, e)
-	Equal(t, 1, badResults[0].(int))
 }
