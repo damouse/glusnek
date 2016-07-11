@@ -58,6 +58,6 @@ func checkError(e error) {
 }
 
 func main() {
-	demos()
-	// stress()
+	//demos()
+	stress()
 }

@@ -32,8 +32,11 @@ def run(*a):
     global counter
     counter += 1
 
-    ret = gosnake.gocall("Hello!")
+    # ret = gosnake.gocall("Hello!")
     # print "PY: args: ", a, " goret: ", ret
+
+    if counter == 1000:
+        raise Exception("asdf")
 
     # Holy crap this works
     # print "Starting a sleep"

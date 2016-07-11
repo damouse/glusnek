@@ -51,7 +51,6 @@ func threadConsume() {
 
 	for {
 		op := <-opChan
-
 		if result, err := threadProcess(op); err != nil {
 			op.errChan <- err
 		} else {
