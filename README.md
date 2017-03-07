@@ -1,6 +1,6 @@
-# gosnake
+# glusnek
 
-Call from python to go and back. Goroutine/GIL safe bindings with automatic type conversion. 
+Gluing Python and Go: gall from go to python and back. Goroutine/GIL safe bindings with automatic type conversion. 
 
 While either language can call the other, go has to start the show: in other words this library embeds python within go. To embed go within python check out (gopy)[https://github.com/go-python/gopy].
 
