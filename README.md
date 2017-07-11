@@ -2,7 +2,9 @@
 
 Gluing Python and Go: call from go to python and back. Goroutine/GIL safe bindings with automatic type conversion. 
 
-While either language can call the other, go has to start the show: in other words this library embeds python within go. To embed go within python check out (gopy)[https://github.com/go-python/gopy].
+While either language can call the other, go has to start the show: in other words this library embeds python within go. To embed go within python check out [gopy](https://github.com/go-python/gopy).
+
+Why is this interesting? Two reasons: because there's a lot of python code I don't want to rewrite in Go, and because go has fantastic support for parallelism and python does not. 
 
 Tested with go1.6, Ubuntu 15.04, python 2.7. No support for python 3 yet. 
 
